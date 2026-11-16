@@ -220,6 +220,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
+<input type="file" id="flyerFile" accept="image/jpeg,image/png" style="display:none">
 
 <script>
 const FROM_NAME = "Above & Beyond ABA";
@@ -322,11 +323,13 @@ function template(e,r){
         subject: `You're Invited: ${place} Winter Holiday Party`,
         fromName: dName,
         replyTo: getDirector(e.id),
+        flyerUrl: e.flyerUrl, flyerLinkUrl: rsvpLink,
         body: `Dear Team,\n\nAs we close out another incredible year together, I wanted to personally invite you to the ${place} Winter Holiday Party. This year has been full of hard work and dedication, and so many moments where your commitment truly made a difference. I could not be more grateful to lead such an exceptional team.\n\nThis celebration is our way of saying thank you, and I truly hope you'll join us for an evening of good food, good company, and well-deserved relaxation.\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\nWarmly,\n${dName}`
       };
     }
     return {
       subject: `🎄 You're invited! ${place} Holiday Party`,
+      flyerUrl: e.flyerUrl, flyerLinkUrl: rsvpLink,
       body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}${calLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
@@ -351,6 +354,7 @@ function buildJob(e,r){
   const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:t.replyTo||REPLY_TO};
   if(t.fromName) job.fromName=t.fromName;
   if(t.fromAddr) job.fromAddr=t.fromAddr;
+  if(t.flyerUrl) { job.flyerUrl=t.flyerUrl; job.flyerLinkUrl=t.flyerLinkUrl; }
   if(r.kind==="pl"){
     job.plEmail=getPL(e.id).email;
     const dir=getDirector(e.id);
@@ -478,6 +482,34 @@ function uploadList(eventId){
       else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else{ toast("Save failed: "+(j.error||("HTTP "+res.status))); }
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+  };
+  inp.click();
+}
+function uploadFlyer(eventId){
+  const inp=document.getElementById("flyerFile");
+  inp.value="";
+  inp.onchange=async()=>{
+    const file=inp.files[0]; if(!file) return;
+    toast("Processing "+file.name+"…");
+    try{
+      const url=URL.createObjectURL(file);
+      const img=new Image();
+      await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+      const maxW=700;
+      const scale=Math.min(1,maxW/img.width);
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+      URL.revokeObjectURL(url);
+      const base64=canvas.toDataURL("image/jpeg",0.78).split(",")[1];
+      const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+      toast("Uploading flyer…");
+      const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
+      const j=await res.json().catch(()=>({}));
+      if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded — it'll show in the Invite email."); openModal(eventId); }
+      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
+    }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
   };
   inp.click();
 }
@@ -678,6 +710,15 @@ function openModal(id){
         <div>
           <label>Employee list</label>
           <div style="font-size:13px;font-weight:600;padding-top:8px">${(()=>{const ac=audienceCount(e.label);return ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet";})()} <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadList('${e.id}')">⬆ Upload</button></div>
+        </div>
+      </div>
+      <div class="plbox" style="grid-template-columns:1fr">
+        <div>
+          <label>Flyer (shown in the Invite email)</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" style="height:52px;border-radius:7px;border:1px solid var(--line)">`:""}
+            <div style="font-size:13px;font-weight:600">${e.flyerUrl?"Flyer uploaded":"No flyer uploaded yet"} <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadFlyer('${e.id}')">⬆ Upload</button></div>
+          </div>
         </div>
       </div>
       <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:4px 0 2px">${e.giftOnly?"Gift email":"Emails"}</div>

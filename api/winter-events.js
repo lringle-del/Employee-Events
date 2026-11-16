@@ -1,4 +1,5 @@
 import { readJSON, writeJSON } from '../lib/blobstore.js';
+import { put } from '@vercel/blob';
 
 const KEY = 'winterEvents.json';
 
@@ -20,7 +21,7 @@ const SEED = {
   'w-maryland': { id: 'w-maryland', state: 'Maryland', city: '', label: 'Maryland', venue: null, address: null, url: null, date: null, time: null, startISO: null, endISO: null, est: null, giftOnly: true, budgetGroup: null, budgetAllotted: null, budgetSpent: 0 },
 };
 
-const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'date', 'time', 'startISO', 'endISO', 'est', 'giftOnly', 'budgetGroup', 'budgetAllotted', 'budgetSpent', 'notes', 'plBcc'];
+const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'date', 'time', 'startISO', 'endISO', 'est', 'giftOnly', 'budgetGroup', 'budgetAllotted', 'budgetSpent', 'notes', 'plBcc', 'flyerUrl'];
 
 /**
  * Winter event metadata store — replaces the hardcoded-array pattern used for
@@ -46,6 +47,22 @@ export default async function handler(req, res) {
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON.' }); } }
     const id = body && body.id;
     if (!id) return res.status(400).json({ error: 'id required.' });
+
+    if (body.action === 'uploadFlyer') {
+      const b64 = body.imageBase64;
+      if (!b64) return res.status(400).json({ error: 'imageBase64 required.' });
+      const contentType = body.contentType || 'image/jpeg';
+      const ext = contentType.includes('png') ? 'png' : 'jpg';
+      const buf = Buffer.from(b64, 'base64');
+      if (buf.length > 1.5 * 1024 * 1024) return res.status(400).json({ error: 'Image too large for email (keep under 1.5MB, ideally under 150KB).' });
+      const blob = await put(`flyers/${id}.${ext}`, buf, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType });
+      let all = await readJSON(KEY, null);
+      if (!all) all = SEED;
+      const existing = all[id] || { id };
+      all[id] = { ...existing, id, flyerUrl: blob.url };
+      await writeJSON(KEY, all);
+      return res.status(200).json({ ok: true, id, flyerUrl: blob.url });
+    }
 
     let all = await readJSON(KEY, null);
     if (!all) all = SEED;
