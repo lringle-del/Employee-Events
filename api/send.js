@@ -19,8 +19,6 @@ const cleanList = (v) => Array.isArray(v)
   : [];
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method not allowed.' }); }
-
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
   const passcode = process.env.SEND_PASSCODE;
@@ -29,6 +27,31 @@ export default async function handler(req, res) {
 
   const provided = req.headers['x-send-passcode'] || '';
   if (provided !== passcode) return res.status(401).json({ error: 'Incorrect passcode.' });
+
+  // GET -> read-only Resend health check (API key validity, domain verification,
+  // sender-domain match). No email is sent. Passcode-gated like everything else.
+  if (req.method === 'GET') {
+    try {
+      const r = await fetch('https://api.resend.com/domains', { headers: { Authorization: 'Bearer ' + apiKey } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(502).json({ ok: false, error: 'Resend API rejected the key: ' + (j.message || r.status) });
+      const fromDomain = (from.match(/@([^\s>]+)/) || [])[1] || '';
+      const domains = (j.data || []).map((d) => ({ name: d.name, status: d.status, region: d.region }));
+      const fromDomainStatus = domains.find((d) => d.name === fromDomain) || null;
+      return res.status(200).json({
+        ok: true,
+        apiKeyValid: true,
+        from,
+        fromDomain,
+        fromDomainVerified: fromDomainStatus ? fromDomainStatus.status === 'verified' : null,
+        domains,
+      });
+    } catch (err) {
+      return res.status(502).json({ ok: false, error: (err && err.message) || 'Could not reach Resend.' });
+    }
+  }
+
+  if (req.method !== 'POST') { res.setHeader('Allow', 'GET, POST'); return res.status(405).json({ error: 'Method not allowed.' }); }
 
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON body.' }); } }
