@@ -43,6 +43,30 @@
   .vtoggle button{font-family:inherit;font-weight:700;font-size:13.5px;border:none;background:transparent;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer}
   .vtoggle button.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
 
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+  .cal-title{font-family:'Libre Caslon Display',serif;font-size:26px}
+  .cal-nav button{font-family:inherit;font-size:16px;font-weight:700;border:1px solid var(--line);background:var(--white);color:var(--ink);width:38px;height:38px;border-radius:10px;cursor:pointer;box-shadow:var(--shadow)}
+  .cal-nav button:hover{background:var(--parchment)}
+  .cal{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);background:var(--midnight)}
+  .dow div{color:var(--vanilla);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;text-align:center;padding:9px 0}
+  .weeks{display:grid;grid-template-columns:repeat(7,1fr)}
+  .cell{min-height:100px;border-right:1px solid var(--parchment);border-bottom:1px solid var(--parchment);padding:5px 5px 7px;position:relative}
+  .cell:nth-child(7n){border-right:none}
+  .cell.out{background:#faf6ee}
+  .cell.out .dnum{color:#c9beab}
+  .cell.today{background:#eef6fb}
+  .cell .dnum{font-size:12.5px;font-weight:700;color:var(--muted);padding:0 2px}
+  .cell.today .dnum{color:var(--frost)}
+  .ev-chip{display:block;width:100%;text-align:left;margin-top:4px;background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;border:none;border-radius:7px;padding:4px 7px;font-size:11.5px;font-weight:800;cursor:pointer;line-height:1.2}
+  .rem-chip{display:block;width:100%;text-align:left;margin-top:3px;border:1px solid;border-radius:6px;padding:3px 6px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rem-chip.s-needs{background:#fdeccd;border-color:#eabb6a;color:#9a6b12}
+  .rem-chip.s-sched{background:#dcf2e6;border-color:#8fd3b3;color:#1f7a56}
+  .rem-chip.s-sent{background:var(--green);border-color:var(--green);color:#fff}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 2px 0;font-size:12px;color:var(--muted)}
+  .legend b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:5px}
+  .cal-note{font-size:13px;color:var(--muted);margin:0 0 10px}
+
   .card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin:12px 0;padding:14px 18px;display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;cursor:pointer}
   .card:hover{background:#fffdf8}
   .db{text-align:center}
@@ -125,9 +149,9 @@
     <div class="brand-row">
       <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Winter Holiday Parties</div></div>
       <nav class="nav">
-        <a href="./index.html">RSVPs</a>
-        <a href="./events.html">Event Command Center</a>
         <a href="./winter.html" class="active">❄️ Winter Holiday Parties</a>
+        <a href="./events.html">Event Command Center</a>
+        <a href="./rsvps.html">RSVPs</a>
       </nav>
     </div>
     <h1 class="title">❄️ Winter Holiday Parties</h1>
@@ -143,10 +167,28 @@
 
   <div class="vtoggle" id="vtoggle">
     <button class="active" onclick="setView('events')" id="vt-events">Events</button>
+    <button onclick="setView('calendar')" id="vt-calendar">Calendar</button>
     <button onclick="setView('budget')" id="vt-budget">Budget</button>
   </div>
 
   <div id="eventsView"></div>
+  <div id="calendarView" class="hidden">
+    <div class="cal-note">Events with a confirmed date show on the calendar below. Events still marked "TBD" won't appear until you set a date in the Events view.</div>
+    <div class="cal-head">
+      <div class="cal-title" id="calTitle"></div>
+      <div class="cal-nav"><button onclick="moveMonth(-1)">‹</button> <button onclick="moveMonth(1)">›</button></div>
+    </div>
+    <div class="cal">
+      <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+      <div class="weeks" id="weeks"></div>
+    </div>
+    <div class="legend">
+      <span><b style="background:linear-gradient(135deg,var(--sky),var(--frost))"></b>Party (with date)</span>
+      <span><b style="background:#fdeccd;border:1px solid #eabb6a"></b>Email — not approved</span>
+      <span><b style="background:#dcf2e6;border:1px solid #8fd3b3"></b>Email — scheduled</span>
+      <span><b style="background:#2f9e6f;border:1px solid #2f9e6f"></b>Email — sent</span>
+    </div>
+  </div>
   <div id="budgetView" class="hidden"></div>
 
   <footer>
@@ -403,7 +445,55 @@ let toastT;
 function toast(msg){const t=document.getElementById("toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),6000);}
 
 /* ===== list view ===== */
-function setView(v){ curView=v; document.getElementById("vt-events").classList.toggle("active",v==="events"); document.getElementById("vt-budget").classList.toggle("active",v==="budget"); document.getElementById("eventsView").classList.toggle("hidden",v!=="events"); document.getElementById("budgetView").classList.toggle("hidden",v!=="budget"); renderView(); }
+function setView(v){
+  curView=v;
+  document.getElementById("vt-events").classList.toggle("active",v==="events");
+  document.getElementById("vt-calendar").classList.toggle("active",v==="calendar");
+  document.getElementById("vt-budget").classList.toggle("active",v==="budget");
+  document.getElementById("eventsView").classList.toggle("hidden",v!=="events");
+  document.getElementById("calendarView").classList.toggle("hidden",v!=="calendar");
+  document.getElementById("budgetView").classList.toggle("hidden",v!=="budget");
+  renderView();
+}
+
+/* ===== calendar ===== */
+let cur;
+function initCursor(){
+  const dated=WINTER_EVENTS.map(e=>e.date).filter(Boolean).map(ymd).filter(d=>dbetween(d,T0)>=0).sort((a,b)=>a-b)[0];
+  const base=dated||T0;
+  cur={y:base.getFullYear(),m:base.getMonth()};
+}
+function moveMonth(n){cur.m+=n;if(cur.m<0){cur.m=11;cur.y--;}if(cur.m>11){cur.m=0;cur.y++;}renderCal();}
+function eventsOn(y,m,d){return WINTER_EVENTS.filter(e=>{if(!e.date)return false;const x=ymd(e.date);return x.getFullYear()===y&&x.getMonth()===m&&x.getDate()===d;});}
+function remindersOn(y,m,d){
+  const out=[];
+  WINTER_EVENTS.forEach(e=>winterReminders(e).forEach(r=>{const x=r.date;if(x.getFullYear()===y&&x.getMonth()===m&&x.getDate()===d)out.push({e,r});}));
+  return out;
+}
+function shortCity(e){return (e.city||e.state).split(" ")[0].replace(/,$/,"");}
+function renderCal(){
+  if(!cur) initCursor();
+  document.getElementById("calTitle").textContent=MOL[cur.m]+" "+cur.y;
+  const first=new Date(cur.y,cur.m,1);
+  const start=new Date(first);start.setDate(1-first.getDay());
+  let html="";
+  for(let i=0;i<42;i++){
+    const dt=new Date(start);dt.setDate(start.getDate()+i);
+    const out=dt.getMonth()!==cur.m;
+    const isToday=dbetween(dt,T0)===0;
+    const evs=eventsOn(dt.getFullYear(),dt.getMonth(),dt.getDate());
+    const rem=remindersOn(dt.getFullYear(),dt.getMonth(),dt.getDate());
+    const evHtml=evs.map(e=>`<button class="ev-chip" onclick="openModal('${e.id}')" title="${esc(e.venue||"")}">❄️ ${esc(e.city||e.state)}</button>`).join("");
+    const remHtml=rem.map(x=>{
+      const st=getStatus(x.e.id,x.r.key);
+      if(st==="skipped") return "";
+      const cls=st==="sent"?"s-sent":(st==="confirmed"||st==="scheduled")?"s-sched":"s-needs";
+      return `<button class="rem-chip ${cls}" onclick="openModal('${x.e.id}')" title="${esc(x.e.city||x.e.state)} — ${x.r.name}">${esc(shortCity(x.e))} ${x.r.abbr}</button>`;
+    }).join("");
+    html+=`<div class="cell ${out?'out':''} ${isToday?'today':''}"><div class="dnum">${dt.getDate()}</div>${evHtml}${remHtml}</div>`;
+  }
+  document.getElementById("weeks").innerHTML=html;
+}
 function eventPills(e){
   if(e.giftOnly){ const st=getStatus(e.id,"gift"); return `<span class="pill ${st==='sent'?'sent':st==='draft'?'needs':'sched'}">${st==='sent'?'Sent':st==='draft'?'Not scheduled':'Scheduled'}</span>`; }
   const rs=winterReminders(e);
@@ -451,7 +541,7 @@ function renderBudgetView(){
   rows+=`<tr class="grand"><td>Grand total</td><td>${money(grandAllotted)}</td><td>${money(grandSpent)}</td><td>${money(grandAllotted-grandSpent)}</td></tr>`;
   document.getElementById("budgetView").innerHTML=`<table class="budget-table"><thead><tr><th>Event</th><th>Allotted</th><th>Spent</th><th>Remaining</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-function renderView(){ if(curView==="events") renderEventsView(); else renderBudgetView(); }
+function renderView(){ if(curView==="events") renderEventsView(); else if(curView==="calendar") renderCal(); else renderBudgetView(); }
 function refreshAll(){ renderView(); }
 
 /* ===== modal ===== */

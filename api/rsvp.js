@@ -22,7 +22,9 @@ export default async function handler(req, res) {
       const plusOnes = entries.filter((r) => r.plusOne).length;
       counts[eventId] = { yes, plusOnes, total: yes + plusOnes };
     }
-    return res.status(200).json({ counts });
+    // Rosters are included openly (no passcode) -- the user confirmed this should
+    // match the Summer RSVP dashboard's always-visible viewing model.
+    return res.status(200).json({ counts, rosters: all });
   }
 
   if (req.method === 'POST') {

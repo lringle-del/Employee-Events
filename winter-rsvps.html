@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Holiday Party RSVPs · Above &amp; Beyond ABA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vanilla:#f5f0e5; --frost:#2f8fc9; --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
+    --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff; --green:#2f9e6f; --amber:#c98a1a;
+    --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5}
+  a{color:var(--lagoon)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:24px;color:#141414}
+  .logo .tag{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#141414;font-weight:600;margin-top:2px}
+  .nav{display:flex;gap:6px}
+  .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
+  .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
+  h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:32px;margin:20px 0 4px}
+  .sub{color:var(--muted);font-size:14px}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+  .tile{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px}
+  .tile .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}
+  .tile .v{font-family:'Libre Caslon Display',Georgia,serif;font-size:30px;margin-top:4px}
+  .state{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:14px 0;overflow:hidden}
+  .state-head{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer}
+  .state-head:hover{background:#fffdf8}
+  .state-name{font-family:'Libre Caslon Display',Georgia,serif;font-size:20px;flex:1}
+  .pill{font-size:12px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--frost);color:#fff}
+  .pill.plus{background:var(--sky);color:var(--midnight)}
+  .pill.head{background:var(--midnight);color:#fff}
+  .pill.gift{background:#ffe6c9;color:#9a5a12}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  .state-body{padding:0 8px 10px;display:none}
+  .state.open .state-body{display:block}
+  .chev{transition:transform .15s}
+  .state.open .chev{transform:rotate(90deg)}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:9px 14px;border-bottom:2px solid var(--parchment,#ebd1ab)}
+  tbody td{padding:9px 14px;border-bottom:1px solid #f1e8d6}
+  .empty{padding:16px 20px;color:var(--muted);font-size:13.5px}
+  .not-roster{color:var(--amber);font-size:11.5px;font-weight:700}
+  @media(max-width:820px){.tiles{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header class="brand">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Holiday Party RSVPs</div></div>
+      <nav class="nav">
+        <a href="./winter.html">❄️ Winter Holiday Parties</a>
+        <a href="./events.html">Event Command Center</a>
+        <a href="./rsvps.html" class="active">RSVPs</a>
+      </nav>
+    </div>
+    <h1>❄️ Holiday Party RSVPs</h1>
+    <div class="sub">Live counts from the RSVP page linked in each invite email. <a href="./rsvps.html">← choose a different season</a></div>
+  </div>
+</header>
+<div class="wrap" id="app">Loading…</div>
+
+<script>
+function esc(s){return(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+let EVENTS=[], ROSTERS={};
+
+async function load(){
+  const [evR,rvR]=await Promise.all([
+    fetch("/api/winter-events",{cache:"no-store"}).then(r=>r.json()).catch(()=>({events:[]})),
+    fetch("/api/rsvp",{cache:"no-store"}).then(r=>r.json()).catch(()=>({rosters:{}})),
+  ]);
+  EVENTS=evR.events||[];
+  ROSTERS=rvR.rosters||{};
+  render();
+}
+function toggle(id){ document.getElementById("card:"+id).classList.toggle("open"); }
+function render(){
+  const parties=EVENTS.filter(e=>!e.giftOnly);
+  let totalYes=0, totalPlus=0;
+  const cards=parties.map(e=>{
+    const roster=ROSTERS[e.id]||{};
+    const rows=Object.entries(roster);
+    const plus=rows.filter(([,r])=>r.plusOne).length;
+    totalYes+=rows.length; totalPlus+=plus;
+    const body=rows.length ? `<table><thead><tr><th>Name</th><th>Email</th><th>Plus one</th></tr></thead><tbody>${
+      rows.map(([email,r])=>`<tr><td>${esc(r.name||"—")}</td><td><a href="mailto:${esc(email)}">${esc(email)}</a></td><td>${r.plusOne?'<b>Yes</b>':'No'}${r.knownRoster===false?' <span class="not-roster">⚠ not on roster</span>':''}</td></tr>`).join("")
+    }</tbody></table>` : `<div class="empty">No RSVPs yet.</div>`;
+    return `<div class="state" id="card:${e.id}">
+      <div class="state-head" onclick="toggle('${e.id}')">
+        <span class="chev">▶</span>
+        <span class="state-name">${esc(e.city||e.state)}</span>
+        <span class="pill">${rows.length} RSVPs</span>
+        <span class="pill plus">+${plus} plus-ones</span>
+        <span class="pill head">${rows.length+plus} total</span>
+      </div>
+      <div class="state-body">${body}</div>
+    </div>`;
+  }).join("");
+
+  const giftEvents=EVENTS.filter(e=>e.giftOnly);
+  const giftCards=giftEvents.map(e=>`<div class="state"><div class="state-head" style="cursor:default">
+      <span class="state-name">${esc(e.city||e.state)}</span>
+      <span class="pill gift">Gift-only — no RSVP needed</span>
+    </div></div>`).join("");
+
+  document.getElementById("app").innerHTML=`
+    <div class="tiles">
+      <div class="tile"><div class="k">Total RSVPs</div><div class="v">${totalYes}</div></div>
+      <div class="tile"><div class="k">Plus-ones</div><div class="v">${totalPlus}</div></div>
+      <div class="tile"><div class="k">Expected headcount</div><div class="v">${totalYes+totalPlus}</div></div>
+      <div class="tile"><div class="k">Parties</div><div class="v">${parties.length}</div></div>
+    </div>
+    ${cards}
+    ${giftCards}
+  `;
+}
+load();
+</script>
+</body>
+</html>
