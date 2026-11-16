@@ -287,30 +287,30 @@ function template(e,r){
   if(r.kind==="gift"||r.key==="gift"){
     return {
       subject: `A little something from the ${FROM_NAME} family 🎁`,
-      body: `Hi there,\n\n'Tis the season! We wanted to take a moment to say how much we appreciate everything you do, all year round.\n\nA small gift is on its way to you as a token of our thanks — we hope it brings a smile.\n\nWishing you a warm and happy holiday season from all of us.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+      body: `Hi there,\n\n'Tis the season! We wanted to take a moment to say how much we appreciate everything you do, all year round.\n\nA small gift is on its way to you as a token of our thanks. We hope it brings a smile.\n\nWishing you a warm and happy holiday season from all of us.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
   if(r.kind==="pl"){
     const pl=getPL(e.id);
     return {
-      subject: `${place} Holiday Party — PL details`,
-      body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party — we're so excited to celebrate the team with you!\n\n${details}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
+      subject: `${place} Holiday Party: PL Details`,
+      body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party. We're so excited to celebrate the team with you!\n\n${details}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
     };
   }
   if(r.key==="invite"){
     return {
       subject: `🎄 You're invited! ${place} Holiday Party`,
-      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party — a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
   if(r.key==="att0"){
     return {
       subject: `🎉 Today's the day! ${place} Holiday Party`,
-      body: `Hi there,\n\nToday's the day! We can't wait to celebrate you and the whole team this evening.\n\n${details}\n\nSee you soon — let's celebrate!\n\nWarm regards,\nThe ${FROM_NAME} Team`
+      body: `Hi there,\n\nToday's the day! We can't wait to celebrate you and the whole team this evening.\n\n${details}\n\nSee you soon, let's celebrate!\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
   return { // att3
-    subject: `🎁 3 days away — ${place} Holiday Party`,
+    subject: `🎁 3 Days Away: ${place} Holiday Party`,
     body: `Hi there,\n\nJust a few more days! We're so looking forward to celebrating with you at the ${place} Winter Holiday Party.\n\n${details}\n\nHaven't RSVP'd yet? ${rsvpLink}\n\nWe can't wait to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
   };
 }
