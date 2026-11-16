@@ -1,7 +1,8 @@
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { put } from '@vercel/blob';
+import { put, get } from '@vercel/blob';
 
 const KEY = 'winterEvents.json';
+const SITE_BASE = 'https://summer-appreciation-event.vercel.app';
 
 // Seed data — same 10 locations as summer, dates/venues TBD, plus Maryland as a
 // gift-only mailing (no party). Oklahoma's combined $10,000 budget is split into
@@ -32,6 +33,24 @@ const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'd
  *   merging only the provided fields. { id: "new-id", ...fullRecord } creates one.
  */
 export default async function handler(req, res) {
+  if (req.method === 'GET' && req.query && req.query.flyerImage) {
+    // Proxy a privately-stored flyer image back out (the project's Blob store
+    // is private-only, so this stands in for a public URL).
+    const id = req.query.flyerImage;
+    const all = await readJSON(KEY, {});
+    const e = all[id];
+    if (!e || !e.flyerPath) return res.status(404).send('Not found.');
+    try {
+      const r = await get(e.flyerPath, { access: 'private' });
+      const buf = Buffer.from(await new Response(r.stream).arrayBuffer());
+      res.setHeader('content-type', e.flyerContentType || 'image/jpeg');
+      res.setHeader('cache-control', 'public, max-age=3600');
+      return res.status(200).send(buf);
+    } catch {
+      return res.status(404).send('Not found.');
+    }
+  }
+
   if (req.method === 'GET') {
     let all = await readJSON(KEY, null);
     if (!all) { all = SEED; await writeJSON(KEY, all); }
@@ -56,15 +75,17 @@ export default async function handler(req, res) {
         const ext = contentType.includes('png') ? 'png' : 'jpg';
         const buf = Buffer.from(b64, 'base64');
         if (buf.length > 1.5 * 1024 * 1024) return res.status(400).json({ error: 'Image too large for email (keep under 1.5MB, ideally under 150KB).' });
-        const blob = await put(`flyers/${id}.${ext}`, buf, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType });
+        const flyerPath = `flyers/${id}.${ext}`;
+        await put(flyerPath, buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType });
         let all = await readJSON(KEY, null);
         if (!all) all = SEED;
         const existing = all[id] || { id };
-        all[id] = { ...existing, id, flyerUrl: blob.url };
+        const flyerUrl = `${SITE_BASE}/api/winter-events?flyerImage=${encodeURIComponent(id)}`;
+        all[id] = { ...existing, id, flyerPath, flyerContentType: contentType, flyerUrl };
         await writeJSON(KEY, all);
-        return res.status(200).json({ ok: true, id, flyerUrl: blob.url });
+        return res.status(200).json({ ok: true, id, flyerUrl });
       } catch (err) {
-        return res.status(500).json({ error: (err && err.message) || 'Upload failed.', stack: err && err.stack });
+        return res.status(500).json({ error: (err && err.message) || 'Upload failed.' });
       }
     }
 
