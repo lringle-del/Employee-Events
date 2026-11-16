@@ -280,7 +280,8 @@ function template(e,r){
   const place=e.city||e.state;
   const where=[e.venue,e.address].filter(Boolean).join(", ");
   const hasDate = !!e.date;
-  const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}` : "📅 Date & venue: coming soon!";
+  const link = e.url ? `\n🔗 ${e.url}` : "";
+  const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}${link}` : "📅 Date & venue: coming soon!";
   const rsvpLink = RSVP_BASE+"?event="+e.id;
   const rsvpLine = `\n\nLet us know you're coming (and if you're bringing a plus one):\n\n${rsvpLink}`;
 
