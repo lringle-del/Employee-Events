@@ -49,19 +49,23 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'id required.' });
 
     if (body.action === 'uploadFlyer') {
-      const b64 = body.imageBase64;
-      if (!b64) return res.status(400).json({ error: 'imageBase64 required.' });
-      const contentType = body.contentType || 'image/jpeg';
-      const ext = contentType.includes('png') ? 'png' : 'jpg';
-      const buf = Buffer.from(b64, 'base64');
-      if (buf.length > 1.5 * 1024 * 1024) return res.status(400).json({ error: 'Image too large for email (keep under 1.5MB, ideally under 150KB).' });
-      const blob = await put(`flyers/${id}.${ext}`, buf, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType });
-      let all = await readJSON(KEY, null);
-      if (!all) all = SEED;
-      const existing = all[id] || { id };
-      all[id] = { ...existing, id, flyerUrl: blob.url };
-      await writeJSON(KEY, all);
-      return res.status(200).json({ ok: true, id, flyerUrl: blob.url });
+      try {
+        const b64 = body.imageBase64;
+        if (!b64) return res.status(400).json({ error: 'imageBase64 required.' });
+        const contentType = body.contentType || 'image/jpeg';
+        const ext = contentType.includes('png') ? 'png' : 'jpg';
+        const buf = Buffer.from(b64, 'base64');
+        if (buf.length > 1.5 * 1024 * 1024) return res.status(400).json({ error: 'Image too large for email (keep under 1.5MB, ideally under 150KB).' });
+        const blob = await put(`flyers/${id}.${ext}`, buf, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType });
+        let all = await readJSON(KEY, null);
+        if (!all) all = SEED;
+        const existing = all[id] || { id };
+        all[id] = { ...existing, id, flyerUrl: blob.url };
+        await writeJSON(KEY, all);
+        return res.status(200).json({ ok: true, id, flyerUrl: blob.url });
+      } catch (err) {
+        return res.status(500).json({ error: (err && err.message) || 'Upload failed.', stack: err && err.stack });
+      }
     }
 
     let all = await readJSON(KEY, null);
