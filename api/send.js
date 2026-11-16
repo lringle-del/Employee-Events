@@ -28,6 +28,20 @@ export default async function handler(req, res) {
   const provided = req.headers['x-send-passcode'] || '';
   if (provided !== passcode) return res.status(401).json({ error: 'Incorrect passcode.' });
 
+  // GET ?emailId=<id> -> fetch one sent email's full record from Resend,
+  // including the actual HTML that went out (diagnostic).
+  if (req.method === 'GET' && req.query && req.query.emailId) {
+    try {
+      const r = await fetch('https://api.resend.com/emails/' + encodeURIComponent(req.query.emailId), { headers: { Authorization: 'Bearer ' + apiKey } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(502).json({ ok: false, error: j.message || r.status });
+      const hasImgTag = typeof j.html === 'string' && j.html.includes('<img');
+      return res.status(200).json({ ok: true, hasImgTag, html: j.html, text: j.text, subject: j.subject, last_event: j.last_event });
+    } catch (err) {
+      return res.status(502).json({ ok: false, error: (err && err.message) || 'Could not reach Resend.' });
+    }
+  }
+
   // GET ?recent=1 -> list the last few sent emails from Resend (diagnostic: what
   // "from" header actually went out, vs. what the mail client displayed).
   if (req.method === 'GET' && req.query && 'recent' in req.query) {
