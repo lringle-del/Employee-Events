@@ -282,7 +282,7 @@ function template(e,r){
   const hasDate = !!e.date;
   const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}` : "📅 Date & venue: coming soon!";
   const rsvpLink = RSVP_BASE+"?event="+e.id;
-  const rsvpLine = `\n\nPlease RSVP here (and let us know if you're bringing a plus one!): ${rsvpLink}`;
+  const rsvpLine = `\n\nLet us know you're coming (and if you're bringing a plus one):\n\n${rsvpLink}`;
 
   if(r.kind==="gift"||r.key==="gift"){
     return {
@@ -311,7 +311,7 @@ function template(e,r){
   }
   return { // att3
     subject: `🎁 3 Days Away: ${place} Holiday Party`,
-    body: `Hi there,\n\nJust a few more days! We're so looking forward to celebrating with you at the ${place} Winter Holiday Party.\n\n${details}\n\nHaven't RSVP'd yet? ${rsvpLink}\n\nWe can't wait to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+    body: `Hi there,\n\nJust a few more days! We're so looking forward to celebrating with you at the ${place} Winter Holiday Party.\n\n${details}\n\nHaven't RSVP'd yet? Let us know you're coming:\n\n${rsvpLink}\n\nWe can't wait to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
   };
 }
 
