@@ -322,7 +322,13 @@ function buildJob(e,r){
   const subject=sEl?sEl.value:t.subject;
   const body=bEl?bEl.value:t.body;
   const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:REPLY_TO};
-  if(r.kind==="pl"){ job.plEmail=getPL(e.id).email; const dir=getDirector(e.id); if(dir) job.bcc=[dir]; }
+  if(r.kind==="pl"){
+    job.plEmail=getPL(e.id).email;
+    const dir=getDirector(e.id);
+    const bcc=(e.plBcc&&e.plBcc.length)?e.plBcc.slice():[];
+    if(dir) bcc.push(dir);
+    if(bcc.length) job.bcc=bcc;
+  }
   if(r.kind==="att" && (r.key==="att3"||r.key==="att0")){ const dir=getDirector(e.id); if(dir) job.dirBcc=[dir]; }
   return job;
 }
