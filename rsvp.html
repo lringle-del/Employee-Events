@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RSVP · Above &amp; Beyond ABA Holiday Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vanilla:#f5f0e5; --frost:#2f8fc9; --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
+    --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff; --green:#2f9e6f;
+    --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px 16px}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(28,69,140,.2);max-width:460px;width:100%;overflow:hidden}
+  .head{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;padding:26px 26px 22px}
+  .head .logo{font-family:'Fredoka','Inter',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
+  .head h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:26px;margin:8px 0 0}
+  .body{padding:22px 26px 28px}
+  .detail{font-size:14px;color:var(--muted);margin-bottom:4px}
+  .detail b{color:var(--ink)}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:16px 0 5px}
+  input[type=text],input[type=email]{width:100%;font-family:inherit;font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fffdf8}
+  .plusone{display:flex;gap:10px;margin-top:4px}
+  .plusone button{flex:1;font-family:inherit;font-weight:700;font-size:14px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#fffdf8;color:var(--ink);cursor:pointer}
+  .plusone button.sel{background:var(--frost);border-color:var(--frost);color:#fff}
+  .btn{width:100%;margin-top:20px;font-family:inherit;font-weight:700;font-size:15px;padding:13px;border-radius:11px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(1px)}
+  .err{color:#b3261e;font-size:13px;margin-top:10px;display:none}
+  .confirm{text-align:center;padding:10px 0}
+  .confirm .big{font-size:42px}
+  .confirm h2{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;margin:10px 0 6px}
+  .confirm p{color:var(--muted);font-size:14px}
+  .cal-btn{display:inline-block;margin-top:14px;font-weight:700;font-size:14px;color:#fff;background:var(--green);padding:11px 20px;border-radius:10px;text-decoration:none}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="card" id="card">Loading…</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const eventId = params.get("event") || "";
+let EVENT = null;
+let plusOne = null;
+
+const MOL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WDL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function fmtLong(iso){ const [y,m,d]=iso.split("-").map(Number); const dt=new Date(y,m-1,d); return WDL[dt.getDay()]+", "+MOL[dt.getMonth()]+" "+dt.getDate(); }
+function esc(s){return(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+async function init(){
+  try{
+    const r=await fetch("/api/winter-events",{cache:"no-store"});
+    const j=await r.json();
+    EVENT=(j.events||[]).find(e=>e.id===eventId);
+  }catch{}
+  if(!EVENT){ document.getElementById("card").innerHTML=`<div class="body"><p>We couldn't find that event. Please use the link from your invite email.</p></div>`; return; }
+  render();
+}
+
+function render(){
+  const place=EVENT.city||EVENT.state;
+  const where=[EVENT.venue,EVENT.address].filter(Boolean).join(", ");
+  const details = EVENT.date
+    ? `<div class="detail">📅 <b>${fmtLong(EVENT.date)}</b></div><div class="detail">🕕 <b>${esc(EVENT.time||"time coming soon")}</b></div><div class="detail">📍 <b>${esc(where||"venue coming soon")}</b></div>`
+    : `<div class="detail">📅 Date &amp; venue coming soon — stay tuned!</div>`;
+  document.getElementById("card").innerHTML=`
+    <div class="head"><div class="logo">Above &amp; Beyond ABA</div><h1>🎄 ${esc(place)} Holiday Party</h1></div>
+    <div class="body">
+      ${details}
+      <label>Your name</label>
+      <input type="text" id="name" placeholder="Full name">
+      <label>Your email</label>
+      <input type="email" id="email" placeholder="you@abtaba.com">
+      <label>Bringing a plus one?</label>
+      <div class="plusone">
+        <button type="button" id="pyes" onclick="setPlusOne(true)">Yes</button>
+        <button type="button" id="pno" onclick="setPlusOne(false)">No</button>
+      </div>
+      <button class="btn" onclick="submitRsvp()">RSVP</button>
+      <div class="err" id="err"></div>
+    </div>`;
+}
+function setPlusOne(v){ plusOne=v; document.getElementById("pyes").classList.toggle("sel",v===true); document.getElementById("pno").classList.toggle("sel",v===false); }
+
+async function submitRsvp(){
+  const name=document.getElementById("name").value.trim();
+  const email=document.getElementById("email").value.trim();
+  const errEl=document.getElementById("err");
+  if(!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || plusOne===null){
+    errEl.textContent="Please fill in your name, a valid email, and let us know about a plus one.";
+    errEl.style.display="block";
+    return;
+  }
+  errEl.style.display="none";
+  try{
+    const res=await fetch("/api/rsvp",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({eventId,name,email,plusOne})});
+    if(!res.ok){ const j=await res.json().catch(()=>({})); errEl.textContent=j.error||"Something went wrong — please try again."; errEl.style.display="block"; return; }
+    renderConfirmation();
+  }catch{ errEl.textContent="Couldn't reach the server — please try again."; errEl.style.display="block"; }
+}
+function renderConfirmation(){
+  const place=EVENT.city||EVENT.state;
+  const calBtn = (EVENT.startISO && EVENT.endISO) ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}">📅 Add to Calendar</a>` : "";
+  document.getElementById("card").innerHTML=`
+    <div class="body confirm">
+      <div class="big">🎉</div>
+      <h2>You're on the list!</h2>
+      <p>We can't wait to celebrate with you at the ${esc(place)} Holiday Party${plusOne?" — bring your plus one!":"."}</p>
+      ${calBtn}
+    </div>`;
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Winter Holiday Parties · Above &amp; Beyond ABA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/lib/dashboard-shared.js"></script>
+<style>
+  :root{
+    --vanilla:#f5f0e5; --biscuit:#e8dbc4; --parchment:#ebd1ab;
+    --sungold:#ffb254; --sunset:#ff8f30; --clay:#de5730;
+    --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
+    --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff;
+    --green:#2f9e6f; --amber:#c98a1a;
+    --frost:#2f8fc9;
+    --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+  h1,h2,h3,.display{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;letter-spacing:.2px}
+  a{color:var(--lagoon)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+
+  header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:24px;color:#141414;letter-spacing:-.01em}
+  .logo .tag{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#141414;font-weight:600;margin-top:2px}
+  .nav{display:flex;gap:6px}
+  .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
+  .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
+  h1.title{font-size:36px;margin:20px 0 4px;color:var(--midnight)}
+  .subtitle{color:var(--muted);font-size:15px;max-width:720px}
+
+  .banner{display:flex;gap:12px;align-items:flex-start;background:#eef6fb;border:1px solid #bfe0f2;border-left:4px solid var(--frost);border-radius:12px;padding:13px 16px;margin:18px 0 2px;font-size:13.5px;color:#1a5a7a}
+  .banner b{color:var(--frost)}
+
+  .vtoggle{display:inline-flex;background:var(--biscuit);border-radius:11px;padding:4px;gap:4px;margin:20px 0 8px}
+  .vtoggle button{font-family:inherit;font-weight:700;font-size:13.5px;border:none;background:transparent;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer}
+  .vtoggle button.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin:12px 0;padding:14px 18px;display:grid;grid-template-columns:120px 1fr auto;gap:16px;align-items:center;cursor:pointer}
+  .card:hover{background:#fffdf8}
+  .db{text-align:center}
+  .db .mo{font-size:11px;font-weight:800;color:var(--clay);letter-spacing:.08em}
+  .db .day{font-family:'Libre Caslon Display',serif;font-size:30px;line-height:1}
+  .db .wd{font-size:11px;color:var(--muted);font-weight:600}
+  .db.tbd{color:var(--amber);font-weight:800;font-size:13px}
+  .ci .t{font-family:'Libre Caslon Display',serif;font-size:20px}
+  .ci .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .cside{text-align:right;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+  .cside b{color:var(--ink);font-size:14px}
+  .pillset{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .pill{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px}
+  .pill.gift{background:#ffe6c9;color:#9a5a12}
+  .pill.needs{background:#fdeccd;color:#9a6b12}
+  .pill.sched{background:#dcf2e6;color:#1f7a56}
+  .pill.sent{background:var(--green);color:#fff}
+
+  .budget-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .budget-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:10px 14px;border-bottom:2px solid var(--parchment);background:#faf6ee}
+  .budget-table td{padding:9px 14px;border-bottom:1px solid var(--parchment);font-size:13.5px}
+  .budget-table input{width:100px;font-family:inherit;font-size:13.5px;padding:6px 9px;border:1px solid var(--line);border-radius:8px}
+  .budget-table tr.grp-total td{font-weight:800;background:#fdf8ef}
+  .budget-table tr.grand td{font-weight:800;background:var(--midnight);color:#fff;border-bottom:none}
+
+  .backdrop{position:fixed;inset:0;background:rgba(28,69,140,.34);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;z-index:50;overflow:auto}
+  .backdrop.show{display:flex}
+  .modal{background:var(--vanilla);border-radius:18px;max-width:760px;width:100%;box-shadow:0 24px 70px rgba(28,69,140,.35);overflow:hidden}
+  .m-head{background:linear-gradient(135deg,var(--frost),var(--lagoon));color:#fff;padding:20px 24px;position:relative}
+  .m-head .x{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:18px;cursor:pointer}
+  .m-head h2{color:#fff;font-size:27px;margin:0}
+  .m-head .meta{font-size:13.5px;color:#dcecfb;margin-top:4px}
+  .m-body{padding:20px 24px 26px}
+  .mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 20px;margin-bottom:16px}
+  .mf .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .mf input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white)}
+  .plbox{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+  .plbox label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .plbox input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:var(--white)}
+
+  .em{background:var(--white);border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden}
+  .em-h{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--parchment);flex-wrap:wrap}
+  .em-h .dot{width:9px;height:9px;border-radius:50%}
+  .dot.pl{background:var(--lagoon)}.dot.att{background:var(--frost)}
+  .em-h .name{font-weight:800;font-size:13.5px}
+  .em-h .to{font-size:12px;color:var(--muted)}
+  .st{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap;margin-left:auto}
+  .c-needs{background:#fdeccd;color:#9a6b12}
+  .c-appr{background:#dcf2e6;color:#1f7a56}
+  .c-sched{background:#e4edfb;color:#457acc}
+  .c-due{background:var(--clay);color:#fff}
+  .c-sent{background:var(--green);color:#fff}
+  .c-skip{background:#e6e9ee;color:var(--muted)}
+  .em-body{padding:12px 15px}
+  .em-body input.subj{width:100%;font-family:inherit;font-size:13.5px;font-weight:600;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fffdf8}
+  .em-body textarea{width:100%;font-family:inherit;font-size:13px;line-height:1.5;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fffdf8;min-height:150px;resize:vertical;color:var(--ink)}
+  .em-foot{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .btn{font-family:inherit;font-weight:700;font-size:13px;padding:9px 15px;border-radius:10px;border:none;cursor:pointer;box-shadow:var(--shadow);text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+  .btn.primary{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff}
+  .btn.ghost{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--parchment)}
+  .btn:active{transform:translateY(1px)}
+  .lnk{background:none;border:none;color:var(--lagoon);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:0}
+  .foot-note{font-size:12px;color:var(--muted);margin-left:auto}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
+  .toast.show{display:block}
+
+  footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px;line-height:1.7}
+  .hidden{display:none!important}
+  @media(max-width:820px){
+    .mgrid{grid-template-columns:1fr}.plbox{grid-template-columns:1fr}
+    .card{grid-template-columns:72px 1fr}.cside{display:none}
+  }
+</style>
+</head>
+<body>
+<header class="brand">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Winter Holiday Parties</div></div>
+      <nav class="nav">
+        <a href="./index.html">RSVPs</a>
+        <a href="./events.html">Event Command Center</a>
+        <a href="./winter.html" class="active">❄️ Winter Holiday Parties</a>
+      </nav>
+    </div>
+    <h1 class="title">❄️ Winter Holiday Parties</h1>
+    <div class="subtitle">Fill in each event's date, venue, and budget as they're confirmed. Invite + PL info send together as soon as you approve; attendees get one reminder 3 days before and one the day of.</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="banner" id="connBanner">
+    <div>❄️</div>
+    <div><b>Same two-gate safety net as summer.</b> Approve an email to <b>schedule</b> it, then tap <b>Approve &amp; send</b> to release it — for the Invite/PL email that usually means it goes out right away, since there's no lead time to wait for. The 3-day and day-of reminders only release on their date.</div>
+  </div>
+
+  <div class="vtoggle" id="vtoggle">
+    <button class="active" onclick="setView('events')" id="vt-events">Events</button>
+    <button onclick="setView('budget')" id="vt-budget">Budget</button>
+  </div>
+
+  <div id="eventsView"></div>
+  <div id="budgetView" class="hidden"></div>
+
+  <footer>
+    Above &amp; Beyond ABA · Winter Holiday Parties
+  </footer>
+</div>
+
+<div class="backdrop" id="backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
+
+<script>
+const FROM_NAME = "Above & Beyond ABA";
+const REPLY_TO = "events@abtaba.com";
+const RSVP_BASE = "/rsvp.html";
+const T0 = today0();
+
+let WINTER_EVENTS = [];
+let SERVER_JOBS={}, SERVER_PLS={}, SERVER_DIRECTORS={}, AUD_COUNTS={}, RSVP_COUNTS={};
+let curView = "events";
+
+async function loadEvents(){ try{ const r=await fetch("/api/winter-events",{cache:"no-store"}); if(r.ok){ WINTER_EVENTS=(await r.json()).events||[]; } }catch{} }
+async function loadSchedule(){ try{ const r=await fetch("/api/schedule",{cache:"no-store"}); if(r.ok){ SERVER_JOBS=(await r.json()).jobs||{}; } }catch{} }
+async function loadPLs(){ try{ const r=await fetch("/api/pl",{cache:"no-store"}); if(r.ok){ SERVER_PLS=(await r.json()).pls||{}; } }catch{} }
+async function loadDirectors(){ try{ const r=await fetch("/api/director",{cache:"no-store"}); if(r.ok){ SERVER_DIRECTORS=(await r.json()).directors||{}; } }catch{} }
+async function loadAudiences(){ try{ const r=await fetch("/api/audience",{cache:"no-store"}); if(r.ok){ AUD_COUNTS=(await r.json()).counts||{}; } }catch{} }
+async function loadRsvpCounts(){ try{ const r=await fetch("/api/rsvp",{cache:"no-store"}); if(r.ok){ RSVP_COUNTS=(await r.json()).counts||{}; } }catch{} }
+
+function getPL(id){ return SERVER_PLS[id]||{name:"",email:""}; }
+function getDirector(id){ return SERVER_DIRECTORS[id]||""; }
+function audienceCount(label){ const key="Winter "+label; return Object.prototype.hasOwnProperty.call(AUD_COUNTS,key)?AUD_COUNTS[key]:null; }
+function rsvpCount(id){ return RSVP_COUNTS[id]||{yes:0,plusOnes:0,total:0}; }
+function getStatus(id,key){
+  const j=SERVER_JOBS[id+":"+key]; if(!j) return "draft";
+  if(j.sentAt) return "sent";
+  if(j.status==="skipped") return "skipped";
+  if(j.status!=="approved") return "draft";
+  if(j.okToSend) return "confirmed";
+  if(j.previewSentAt) return "preview";
+  return "scheduled";
+}
+function statusPill(status,rd){
+  if(status==="sent")      return {cls:"c-sent", txt:"Sent ✓"};
+  if(status==="skipped")   return {cls:"c-skip", txt:"Ignored"};
+  if(status==="confirmed") return {cls:"c-appr", txt:"Approved ✓ · sends "+fmtShort(rd)};
+  if(status==="preview")   return {cls:"c-due",  txt:"Preview sent — approve it"};
+  if(status==="scheduled") return {cls:"c-sched",txt:"Scheduled · sends "+fmtShort(rd)};
+  return {cls:"c-needs", txt:"Needs approval"};
+}
+
+/* ===== winter reminder sequence: Invite+PL sent ASAP, then -3d and day-of once a date exists ===== */
+function winterReminders(e){
+  if(e.giftOnly) return [{kind:"att", key:"gift", abbr:"Gift", name:"Gift notice", date:T0}];
+  const list=[
+    {kind:"pl",  key:"pl-invite", abbr:"PL",     name:"PL info (sent with invite)", date:T0},
+    {kind:"att", key:"invite",    abbr:"Invite", name:"Invite + RSVP",              date:T0},
+  ];
+  if(e.date){
+    const d=ymd(e.date);
+    list.push({kind:"att", key:"att3", abbr:"−3 days", name:"Reminder (3 days before)", date:addDays(d,-3)});
+    list.push({kind:"att", key:"att0", abbr:"Day-of",   name:"Reminder (day of)",        date:d});
+  }
+  return list;
+}
+
+/* ===== festive email copy ===== */
+function template(e,r){
+  const place=e.city||e.state;
+  const where=[e.venue,e.address].filter(Boolean).join(", ");
+  const hasDate = !!e.date;
+  const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}` : "📅 Date & venue: coming soon!";
+  const rsvpLink = RSVP_BASE+"?event="+e.id;
+  const rsvpLine = `\n\nPlease RSVP here (and let us know if you're bringing a plus one!): ${rsvpLink}`;
+
+  if(r.kind==="gift"||r.key==="gift"){
+    return {
+      subject: `A little something from the ${FROM_NAME} family 🎁`,
+      body: `Hi there,\n\n'Tis the season! We wanted to take a moment to say how much we appreciate everything you do, all year round.\n\nA small gift is on its way to you as a token of our thanks — we hope it brings a smile.\n\nWishing you a warm and happy holiday season from all of us.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+    };
+  }
+  if(r.kind==="pl"){
+    const pl=getPL(e.id);
+    return {
+      subject: `${place} Holiday Party — PL details`,
+      body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party — we're so excited to celebrate the team with you!\n\n${details}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
+    };
+  }
+  if(r.key==="invite"){
+    return {
+      subject: `🎄 You're invited! ${place} Holiday Party`,
+      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party — a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+    };
+  }
+  if(r.key==="att0"){
+    return {
+      subject: `🎉 Today's the day! ${place} Holiday Party`,
+      body: `Hi there,\n\nToday's the day! We can't wait to celebrate you and the whole team this evening.\n\n${details}\n\nSee you soon — let's celebrate!\n\nWarm regards,\nThe ${FROM_NAME} Team`
+    };
+  }
+  return { // att3
+    subject: `🎁 3 days away — ${place} Holiday Party`,
+    body: `Hi there,\n\nJust a few more days! We're so looking forward to celebrating with you at the ${place} Winter Holiday Party.\n\n${details}\n\nHaven't RSVP'd yet? ${rsvpLink}\n\nWe can't wait to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+  };
+}
+
+/* ===== job building & approval (reuses /api/schedule, /lib/dashboard-shared.js) ===== */
+function buildJob(e,r){
+  const sEl=document.getElementById("subj:"+r.key), bEl=document.getElementById("body:"+r.key);
+  const t=template(e,r);
+  const subject=sEl?sEl.value:t.subject;
+  const body=bEl?bEl.value:t.body;
+  const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:REPLY_TO};
+  if(r.kind==="pl"){ job.plEmail=getPL(e.id).email; const dir=getDirector(e.id); if(dir) job.bcc=[dir]; }
+  if(r.kind==="att" && (r.key==="att3"||r.key==="att0")){ const dir=getDirector(e.id); if(dir) job.dirBcc=[dir]; }
+  return job;
+}
+async function approve(key){
+  const e=WINTER_EVENTS.find(x=>x.id===openId);const r=winterReminders(e).find(x=>x.key===key);
+  if(r.kind==="pl" && !getPL(openId).email){ toast("Add the PL's email above before approving."); return; }
+  const ac=audienceCount(e.label);
+  const who=r.kind==="pl"?getPL(openId).email:((ac!=null?ac:0)+" recipients ("+e.label+")");
+  const sub=document.getElementById("subj:"+key).value;
+  const dueNow=dbetween(r.date,T0)<=0;
+  if(!confirm(`Approve & schedule this email?\n\n"${sub}"\n\n${dueNow?"It will send AS SOON as you approve & send it (next step).":"It will send on "+fmtShort(r.date)+"."}`)) return;
+  toast("Scheduling…");
+  if(await scheduleAction(openId+":"+key,"approve",buildJob(e,r))){
+    openModal(openId); refreshAll();
+    toast("Scheduled ✓ — tap Approve & send to release it.");
+  }
+}
+async function confirmSend(key){
+  const e=WINTER_EVENTS.find(x=>x.id===openId);const r=winterReminders(e).find(x=>x.key===key);
+  const ac=audienceCount(e.label);
+  const who=r.kind==="pl"?getPL(openId).email:((ac!=null?ac:0)+" recipients ("+e.label+")");
+  const dueNow=dbetween(r.date,T0)<=0;
+  if(!confirm(`Approve "${document.getElementById("subj:"+key).value}"\n\nTo: ${who}\n${dueNow?"This will SEND now.":"It will send on "+fmtShort(r.date)+"."}\n\nProceed?`)) return;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  toast("Approving…");
+  try{
+    const res=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:openId+":"+key,action:"confirm"})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){
+      const jb=SERVER_JOBS[openId+":"+key]||{}; jb.status="approved"; jb.okToSend=true; if(j.status==="sent") jb.sentAt=new Date().toISOString(); SERVER_JOBS[openId+":"+key]=jb;
+      openModal(openId); refreshAll();
+      toast(j.sentNow?("✓ Sent to "+who+"."):("✓ Approved — will send "+fmtShort(r.date)+"."));
+    }else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else{ toast("Couldn't approve: "+(j.error||("HTTP "+res.status))); }
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
+async function revoke(key){ if(await scheduleAction(openId+":"+key,"remove")){ openModal(openId); refreshAll(); toast("Reverted to Not scheduled."); } }
+async function skip(key){ if(await scheduleAction(openId+":"+key,"skip")){ openModal(openId); refreshAll(); } }
+async function restore(key){ if(await scheduleAction(openId+":"+key,"remove")){ openModal(openId); refreshAll(); } }
+function copyMail(key){
+  const s=document.getElementById("subj:"+key).value, b=document.getElementById("body:"+key).value;
+  navigator.clipboard.writeText("Subject: "+s+"\n\n"+b).then(()=>toast("Email copied to clipboard."));
+}
+
+/* ===== event data editing (no code deploy needed) ===== */
+async function patchEvent(id, fields){
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id,...fields})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===id); if(i>=0) WINTER_EVENTS[i]=j.event; return true; }
+    if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+  return false;
+}
+function fmtClock(hm){ if(!hm) return ""; const [h,m]=hm.split(":").map(Number); const ap=h>=12?"PM":"AM"; let hh=h%12; if(hh===0) hh=12; return hh+":"+String(m).padStart(2,"0")+" "+ap; }
+async function saveDateTime(){
+  const date=document.getElementById("edate").value||null;
+  const st=document.getElementById("etstart").value, et=document.getElementById("etend").value;
+  const time = (st&&et) ? (fmtClock(st)+"–"+fmtClock(et)) : null;
+  const startISO = (date&&st) ? date+"T"+st+":00" : null;
+  const endISO = (date&&et) ? date+"T"+et+":00" : null;
+  if(await patchEvent(openId,{date,time,startISO,endISO})){ openModal(openId); refreshAll(); toast("Saved ✓"); }
+}
+async function saveTextField(field){
+  const val=document.getElementById("e"+field).value.trim();
+  if(await patchEvent(openId,{[field]:val})){ toast("Saved ✓"); }
+}
+async function saveBudget(id,field,val){
+  const n=val===""?null:Number(val);
+  await patchEvent(id,{[field]:n});
+}
+async function savePL(){
+  const name=document.getElementById("plname").value, email=document.getElementById("plemail").value.trim();
+  const pass=sessionStorage.getItem("send_pass");
+  SERVER_PLS[openId]={name,email};
+  if(pass){ fetch("/api/pl",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:openId,name,email})}).catch(()=>{}); }
+}
+async function saveDirector(){
+  const email=document.getElementById("direml").value.trim();
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  SERVER_DIRECTORS[openId]=email;
+  try{ await fetch("/api/director",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:openId,email})}); toast("Saved ✓"); }catch{}
+}
+
+/* ===== roster upload (reused xlsx parsing, labeled "Winter <label>") ===== */
+function extractEmailsFromWorkbook(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
+  const out=new Set(); const rx=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if(!rows.length) return [];
+  const header=rows[0].map(h=>String(h).toLowerCase().trim());
+  let emailCol=header.indexOf("email");
+  if(emailCol<0) emailCol=header.findIndex(h=>h.includes("email")&&!h.includes("additional")&&!h.includes("guardian"));
+  if(emailCol<0){ rows.forEach(r=>r.forEach(c=>{const v=String(c).trim(); if(rx.test(v))out.add(v);})); return [...out]; }
+  for(let i=1;i<rows.length;i++){ const em=String(rows[i][emailCol]||"").trim(); if(rx.test(em)) out.add(em); }
+  return [...out];
+}
+function uploadList(eventId){
+  const e=WINTER_EVENTS.find(x=>x.id===eventId);
+  const inp=document.getElementById("listFile");
+  inp.value="";
+  inp.onchange=async()=>{
+    const file=inp.files[0]; if(!file) return;
+    toast("Reading "+file.name+"…");
+    let emails;
+    try{ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); emails=extractEmailsFromWorkbook(wb); }
+    catch(err){ toast("Couldn't read that file ("+err.message+")."); return; }
+    if(!emails.length){ toast("No email addresses found in that file."); return; }
+    if(!confirm(`Save ${emails.length} emails as the ${e.city||e.state} winter roster?`)) return;
+    const pass=getSendPass(); if(!pass){ toast("Passcode needed to save the list."); return; }
+    toast("Saving "+emails.length+" emails…");
+    try{
+      const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
+      const j=await res.json().catch(()=>({}));
+      if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); openModal(eventId); }
+      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else{ toast("Save failed: "+(j.error||("HTTP "+res.status))); }
+    }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+  };
+  inp.click();
+}
+async function viewRsvpList(eventId){
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  try{
+    const res=await fetch("/api/rsvp",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"list",eventId})});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok){ toast("Couldn't load list: "+(j.error||("HTTP "+res.status))); return; }
+    const rows=Object.entries(j.roster||{});
+    if(!rows.length){ alert("No RSVPs yet for this event."); return; }
+    const lines=rows.map(([email,r])=>`${r.name||"(no name)"} <${email}>${r.plusOne?" +1":""}${r.knownRoster===false?"  ⚠ not on uploaded roster":""}`);
+    alert(`RSVPs (${rows.length}):\n\n`+lines.join("\n"));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
+
+/* ===== toast ===== */
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),6000);}
+
+/* ===== list view ===== */
+function setView(v){ curView=v; document.getElementById("vt-events").classList.toggle("active",v==="events"); document.getElementById("vt-budget").classList.toggle("active",v==="budget"); document.getElementById("eventsView").classList.toggle("hidden",v!=="events"); document.getElementById("budgetView").classList.toggle("hidden",v!=="budget"); renderView(); }
+function eventPills(e){
+  if(e.giftOnly){ const st=getStatus(e.id,"gift"); return `<span class="pill ${st==='sent'?'sent':st==='draft'?'needs':'sched'}">${st==='sent'?'Sent':st==='draft'?'Not scheduled':'Scheduled'}</span>`; }
+  const rs=winterReminders(e);
+  return rs.map(r=>{ const st=getStatus(e.id,r.key); if(st==="skipped") return ""; const cls=st==="sent"?"sent":st==="draft"?"needs":"sched"; return `<span class="pill ${cls}">${r.abbr}: ${st==="sent"?"Sent":st==="draft"?"Needs approval":"Scheduled"}</span>`; }).join("");
+}
+function renderEventsView(){
+  const sorted=WINTER_EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
+  document.getElementById("eventsView").innerHTML=sorted.map(e=>{
+    const place=e.city||e.state;
+    const dateHtml = e.date ? (()=>{ const d=ymd(e.date); return `<div class="db"><div class="mo">${MO[d.getMonth()]}</div><div class="day">${d.getDate()}</div><div class="wd">${WD[d.getDay()]}</div></div>`; })() : `<div class="db tbd">TBD</div>`;
+    const rc=e.giftOnly?null:rsvpCount(e.id);
+    const budgetTxt = e.budgetAllotted!=null ? (money(e.budgetSpent||0)||"$0")+" / "+money(e.budgetAllotted) : "";
+    return `<div class="card" onclick="openModal('${e.id}')">
+      ${dateHtml}
+      <div class="ci">
+        <div class="t">${esc(place)}${e.giftOnly?' <span style="font-size:12px;color:var(--amber)">(gift only, no party)</span>':''}</div>
+        <div class="s">${e.venue?esc(e.venue):"Venue TBD"}${e.time?" · "+esc(e.time):""}</div>
+      </div>
+      <div class="cside">
+        ${rc?`<b>${rc.total}</b> RSVP'd (${rc.yes} + ${rc.plusOnes} guests)`:""}
+        ${budgetTxt?`<span>${budgetTxt}</span>`:""}
+        <div class="pillset">${eventPills(e)}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderBudgetView(){
+  const groups={}; let grandAllotted=0, grandSpent=0;
+  WINTER_EVENTS.filter(e=>e.budgetAllotted!=null).forEach(e=>{ const g=e.budgetGroup||e.id; (groups[g]=groups[g]||[]).push(e); });
+  let rows="";
+  Object.keys(groups).forEach(g=>{
+    const items=groups[g];
+    items.forEach(e=>{
+      rows+=`<tr><td>${esc(e.city||e.state)}</td>
+        <td><input type="number" value="${e.budgetAllotted??''}" onchange="saveBudget('${e.id}','budgetAllotted',this.value).then(()=>renderBudgetView())"></td>
+        <td><input type="number" value="${e.budgetSpent??0}" onchange="saveBudget('${e.id}','budgetSpent',this.value).then(()=>renderBudgetView())"></td>
+        <td>${money((e.budgetAllotted||0)-(e.budgetSpent||0))}</td></tr>`;
+      grandAllotted+=e.budgetAllotted||0; grandSpent+=e.budgetSpent||0;
+    });
+    if(items.length>1){
+      const a=items.reduce((s,e)=>s+(e.budgetAllotted||0),0), sp=items.reduce((s,e)=>s+(e.budgetSpent||0),0);
+      rows+=`<tr class="grp-total"><td>${esc(g)} total</td><td>${money(a)}</td><td>${money(sp)}</td><td>${money(a-sp)}</td></tr>`;
+    }
+  });
+  rows+=`<tr class="grand"><td>Grand total</td><td>${money(grandAllotted)}</td><td>${money(grandSpent)}</td><td>${money(grandAllotted-grandSpent)}</td></tr>`;
+  document.getElementById("budgetView").innerHTML=`<table class="budget-table"><thead><tr><th>Event</th><th>Allotted</th><th>Spent</th><th>Remaining</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderView(){ if(curView==="events") renderEventsView(); else renderBudgetView(); }
+function refreshAll(){ renderView(); }
+
+/* ===== modal ===== */
+let openId=null;
+function openModal(id){
+  openId=id;
+  const e=WINTER_EVENTS.find(x=>x.id===id);
+  const pl=getPL(id);
+  const dir=getDirector(id);
+  const rc=e.giftOnly?null:rsvpCount(id);
+  const rs=winterReminders(e);
+  const emails=rs.map(r=>{
+    const t=template(e,r);
+    const status=getStatus(id,r.key);
+    const st=statusPill(status,r.date);
+    const ac=audienceCount(e.label);
+    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((ac!=null?ac:0)+" recipients"+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
+    let controls;
+    if(status==="draft"){
+      controls=`<button class="btn primary" onclick="approve('${r.key}')">✓ Approve &amp; schedule</button>
+        <button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button>
+        <button class="lnk" onclick="skip('${r.key}')">Ignore</button>
+        <span class="foot-note">Not scheduled</span>`;
+    }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
+      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent to you." : "✓ Scheduled — tap Approve & send to release it.";
+      const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSend('${r.key}')">✅ Approve &amp; send</button>` : "";
+      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revoke('${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+    }else if(status==="sent"){
+      controls=`<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+    }else{
+      controls=`<button class="lnk" onclick="restore('${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
+    }
+    return `<div class="em">
+      <div class="em-h">
+        <span class="dot ${r.kind}"></span>
+        <span class="name">${r.name}</span>
+        <span class="to">→ ${toDetail} · sends ${fmtShort(r.date)}</span>
+        <span class="st ${st.cls}">${st.txt}</span>
+      </div>
+      <div class="em-body">
+        <input class="subj" id="subj:${r.key}" value="${esc(t.subject)}">
+        <textarea id="body:${r.key}">${esc(t.body)}</textarea>
+        <div class="em-foot">${controls}</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  const dateFields = e.giftOnly ? "" : `
+      <div class="mgrid">
+        <div class="mf"><div class="l">Date</div><input type="date" id="edate" value="${e.date||""}" onchange="saveDateTime()"></div>
+        <div class="mf"><div class="l">Start / End time</div><div style="display:flex;gap:6px"><input type="time" id="etstart" value="${e.startISO?e.startISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime()"><input type="time" id="etend" value="${e.endISO?e.endISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime()"></div></div>
+        <div class="mf"><div class="l">Venue</div><input id="evenue" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('venue')"></div>
+        <div class="mf"><div class="l">Address</div><input id="eaddress" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('address')"></div>
+        <div class="mf"><div class="l">Website</div><input id="eurl" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('url')"></div>
+        <div class="mf"><div class="l">RSVPs</div><div style="padding-top:8px;font-weight:600">${rc?`<b>${rc.total}</b> (${rc.yes} yes + ${rc.plusOnes} plus-ones)`:"—"} ${rc&&rc.total?`<button class="lnk" onclick="viewRsvpList('${e.id}')">view list</button>`:""}</div></div>
+      </div>`;
+
+  document.getElementById("modal").innerHTML=`
+    <div class="m-head">
+      <button class="x" onclick="closeModal()">×</button>
+      <h2>${esc(e.city||e.state)}</h2>
+      <div class="meta">${esc(e.state)}${e.date?" · "+fmtLong(ymd(e.date)):" · date TBD"}${e.time?" · "+esc(e.time):""}</div>
+    </div>
+    <div class="m-body">
+      ${dateFields}
+      <div class="plbox">
+        <div><label>Party Lead</label><input id="plname" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL()"></div>
+        <div><label>PL email</label><input id="plemail" type="email" value="${esc(pl.email||"")}" placeholder="name@abtaba.com" onchange="savePL()"></div>
+      </div>
+      <div class="plbox">
+        <div><label>State director (BCC)</label><input id="direml" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector()"></div>
+        <div>
+          <label>Employee list</label>
+          <div style="font-size:13px;font-weight:600;padding-top:8px">${(()=>{const ac=audienceCount(e.label);return ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet";})()} <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadList('${e.id}')">⬆ Upload</button></div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:4px 0 2px">${e.giftOnly?"Gift email":"Emails"}</div>
+      ${emails}
+    </div>`;
+  document.getElementById("backdrop").classList.add("show");
+  document.body.style.overflow="hidden";
+}
+function closeModal(){document.getElementById("backdrop").classList.remove("show");document.body.style.overflow="";openId=null;}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+
+/* init */
+Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts()]).then(()=>{ renderView(); if(openId) openModal(openId); });
+</script>
+</body>
+</html>
