@@ -264,11 +264,11 @@ function statusPill(status,rd){
 function winterReminders(e){
   if(e.giftOnly) return [{kind:"att", key:"gift", abbr:"Gift", name:"Gift notice", date:T0}];
   const list=[
-    {kind:"pl",  key:"pl-invite", abbr:"PL",     name:"PL info (sent with invite)", date:T0},
-    {kind:"att", key:"invite",    abbr:"Invite", name:"Invite + RSVP",              date:T0},
+    {kind:"att", key:"invite", abbr:"Invite", name:"Invite + RSVP", date:T0},
   ];
   if(e.date){
     const d=ymd(e.date);
+    list.push({kind:"pl",  key:"pl3",  abbr:"PL · −3 days", name:"PL reminder (3 days before)", date:addDays(d,-3)});
     list.push({kind:"att", key:"att3", abbr:"−3 days", name:"Reminder (3 days before)", date:addDays(d,-3)});
     list.push({kind:"att", key:"att0", abbr:"Day-of",   name:"Reminder (day of)",        date:d});
   }
