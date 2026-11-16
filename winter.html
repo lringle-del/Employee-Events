@@ -321,7 +321,6 @@ function template(e,r){
     if(dName){
       return {
         subject: `You're Invited: ${place} Winter Holiday Party`,
-        fromName: dName,
         replyTo: getDirector(e.id),
         flyerUrl: e.flyerUrl, flyerLinkUrl: rsvpLink,
         body: `Dear Team,\n\nAs we close out another incredible year together, I wanted to personally invite you to the ${place} Winter Holiday Party. This year has been full of hard work and dedication, and so many moments where your commitment truly made a difference. I could not be more grateful to lead such an exceptional team.\n\nThis celebration is our way of saying thank you, and I truly hope you'll join us for an evening of good food, good company, and well-deserved relaxation.\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\nWarmly,\n${dName}`
