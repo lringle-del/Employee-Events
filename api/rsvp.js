@@ -29,13 +29,20 @@ export default async function handler(req, res) {
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON.' }); } }
 
-    if (body && body.action === 'list') {
+    if (body && (body.action === 'list' || body.action === 'delete')) {
       const pass = process.env.SEND_PASSCODE;
       if (!pass) return res.status(501).json({ error: 'SEND_PASSCODE not configured.' });
       if ((req.headers['x-send-passcode'] || '') !== pass) return res.status(401).json({ error: 'Incorrect passcode.' });
       const eventId = body.eventId;
       if (!eventId) return res.status(400).json({ error: 'eventId required.' });
       const all = await readJSON(KEY, {});
+      if (body.action === 'delete') {
+        const email = (body.email || '').trim().toLowerCase();
+        if (!email) return res.status(400).json({ error: 'email required.' });
+        if (all[eventId]) delete all[eventId][email];
+        await writeJSON(KEY, all);
+        return res.status(200).json({ ok: true, eventId, email });
+      }
       return res.status(200).json({ eventId, roster: all[eventId] || {} });
     }
 
