@@ -224,8 +224,20 @@
 <script>
 const FROM_NAME = "Above & Beyond ABA";
 const REPLY_TO = "events@abtaba.com";
-const RSVP_BASE = "/rsvp.html";
+const SITE_BASE = "https://summer-appreciation-event.vercel.app";
+const RSVP_BASE = SITE_BASE+"/rsvp.html";
+const ICS_BASE = SITE_BASE+"/api/ics";
 const T0 = today0();
+
+// Director full names, keyed by their email (api/director.js only stores the
+// email). Used to send the Invite as a formal letter from that director --
+// add an entry here whenever a new director is set for an event.
+const DIRECTOR_NAMES = {
+  "jmayerovitz@abtaba.com": "Joseph Mayerovitz",
+  "sschwab@abtaba.com": "Steven Schwab",
+  "mwolf@abtaba.com": "Marc Wolf",
+};
+function directorName(id){ const email=getDirector(id); return email ? (DIRECTOR_NAMES[email]||null) : null; }
 
 let WINTER_EVENTS = [];
 let SERVER_JOBS={}, SERVER_PLS={}, SERVER_DIRECTORS={}, AUD_COUNTS={}, RSVP_COUNTS={};
@@ -284,6 +296,7 @@ function template(e,r){
   const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}${link}` : "📅 Date & venue: coming soon!";
   const rsvpLink = RSVP_BASE+"?event="+e.id;
   const rsvpLine = `\n\nLet us know you're coming (and if you're bringing a plus one):\n\n${rsvpLink}`;
+  const calLine = (e.startISO&&e.endISO) ? `\n\nAdd it to your calendar:\n\n${ICS_BASE}?eventId=${e.id}` : "";
 
   if(r.kind==="gift"||r.key==="gift"){
     return {
@@ -295,13 +308,22 @@ function template(e,r){
     const pl=getPL(e.id);
     return {
       subject: `${place} Holiday Party: PL Details`,
-      body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party. We're so excited to celebrate the team with you!\n\n${details}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
+      body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party. We're so excited to celebrate the team with you!\n\n${details}${calLine}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
     };
   }
   if(r.key==="invite"){
+    const dName=directorName(e.id);
+    if(dName){
+      return {
+        subject: `You're Invited: ${place} Winter Holiday Party`,
+        fromName: dName,
+        replyTo: getDirector(e.id),
+        body: `Dear Team,\n\nIt is my pleasure to invite you to the ${place} Winter Holiday Party, a celebration of the hard work, dedication, and teamwork you have brought to Above & Beyond ABA this year.\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nI look forward to celebrating with you and the rest of the team.\n\nWarm regards,\n${dName}`
+      };
+    }
     return {
       subject: `🎄 You're invited! ${place} Holiday Party`,
-      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}${calLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
   if(r.key==="att0"){
@@ -322,7 +344,8 @@ function buildJob(e,r){
   const t=template(e,r);
   const subject=sEl?sEl.value:t.subject;
   const body=bEl?bEl.value:t.body;
-  const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:REPLY_TO};
+  const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:t.replyTo||REPLY_TO};
+  if(t.fromName) job.fromName=t.fromName;
   if(r.kind==="pl"){
     job.plEmail=getPL(e.id).email;
     const dir=getDirector(e.id);
