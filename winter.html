@@ -66,6 +66,11 @@
   .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 2px 0;font-size:12px;color:var(--muted)}
   .legend b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:5px}
   .cal-note{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .navdrop{position:relative;display:inline-block}
+  .navdrop-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);min-width:170px;overflow:hidden;z-index:40}
+  .navdrop-menu.show{display:block}
+  .navdrop-menu a{display:block;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none}
+  .navdrop-menu a:hover{background:var(--vanilla)}
   .unsched{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 18px;margin-bottom:16px}
   .unsched .ut{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:9px}
   .unsched .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -157,8 +162,15 @@
       <nav class="nav">
         <a href="./winter.html" class="active">❄️ Winter Holiday Parties</a>
         <a href="./events.html">Event Command Center</a>
-        <a href="./rsvps.html">RSVPs</a>
+        <div class="navdrop">
+          <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:transparent;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
+          <div class="navdrop-menu" id="rsvpMenu">
+            <a href="./index.html">☀️ Summer '26</a>
+            <a href="./winter-rsvps.html">❄️ Winter '26/'27</a>
+          </div>
+        </div>
       </nav>
+      <script>document.addEventListener("click",()=>{const m=document.getElementById("rsvpMenu");if(m)m.classList.remove("show");});</script>
     </div>
     <h1 class="title">❄️ Winter Holiday Parties</h1>
     <div class="subtitle">Fill in each event's date, venue, and budget as they're confirmed. Invite + PL info send together as soon as you approve; attendees get one reminder 3 days before and one the day of.</div>

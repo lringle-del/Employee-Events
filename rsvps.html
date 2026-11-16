@@ -36,6 +36,11 @@
   .choice p{color:var(--muted);font-size:14px;margin:0}
   .choice.summer{border-top:4px solid var(--sunset)}
   .choice.winter{border-top:4px solid var(--frost)}
+  .navdrop{position:relative;display:inline-block}
+  .navdrop-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);min-width:170px;overflow:hidden;z-index:40}
+  .navdrop-menu.show{display:block}
+  .navdrop-menu a{display:block;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none}
+  .navdrop-menu a:hover{background:var(--vanilla)}
   @media(max-width:700px){.choices{grid-template-columns:1fr}}
 </style>
 </head>
@@ -47,8 +52,15 @@
       <nav class="nav">
         <a href="./winter.html">❄️ Winter Holiday Parties</a>
         <a href="./events.html">Event Command Center</a>
-        <a href="./rsvps.html" class="active">RSVPs</a>
+        <div class="navdrop">
+          <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:var(--white);color:var(--ink);box-shadow:var(--shadow);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
+          <div class="navdrop-menu" id="rsvpMenu">
+            <a href="./index.html">☀️ Summer '26</a>
+            <a href="./winter-rsvps.html">❄️ Winter '26/'27</a>
+          </div>
+        </div>
       </nav>
+      <script>document.addEventListener("click",()=>{const m=document.getElementById("rsvpMenu");if(m)m.classList.remove("show");});</script>
     </div>
   </div>
 </header>
