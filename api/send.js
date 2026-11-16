@@ -28,6 +28,20 @@ export default async function handler(req, res) {
   const provided = req.headers['x-send-passcode'] || '';
   if (provided !== passcode) return res.status(401).json({ error: 'Incorrect passcode.' });
 
+  // GET ?recent=1 -> list the last few sent emails from Resend (diagnostic: what
+  // "from" header actually went out, vs. what the mail client displayed).
+  if (req.method === 'GET' && req.query && 'recent' in req.query) {
+    try {
+      const r = await fetch('https://api.resend.com/emails', { headers: { Authorization: 'Bearer ' + apiKey } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(502).json({ ok: false, error: j.message || r.status });
+      const list = (j.data || []).slice(0, 10).map((e) => ({ id: e.id, from: e.from, to: e.to, subject: e.subject, created_at: e.created_at, last_event: e.last_event }));
+      return res.status(200).json({ ok: true, recent: list });
+    } catch (err) {
+      return res.status(502).json({ ok: false, error: (err && err.message) || 'Could not reach Resend.' });
+    }
+  }
+
   // GET -> read-only Resend health check (API key validity, domain verification,
   // sender-domain match). No email is sent. Passcode-gated like everything else.
   if (req.method === 'GET') {
