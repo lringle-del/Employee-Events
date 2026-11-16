@@ -56,6 +56,23 @@ export default async function handler(req, res) {
     }
   }
 
+  // GET ?domainDetail=1 -> the exact DNS records Resend wants for the sending
+  // domain and which ones are currently failing (diagnostic).
+  if (req.method === 'GET' && req.query && 'domainDetail' in req.query) {
+    try {
+      const listR = await fetch('https://api.resend.com/domains', { headers: { Authorization: 'Bearer ' + apiKey } });
+      const listJ = await listR.json().catch(() => ({}));
+      const fromDomain = (from.match(/@([^\s>]+)/) || [])[1] || '';
+      const match = (listJ.data || []).find((d) => d.name === fromDomain);
+      if (!match) return res.status(404).json({ ok: false, error: 'Domain not found in Resend: ' + fromDomain });
+      const detailR = await fetch('https://api.resend.com/domains/' + match.id, { headers: { Authorization: 'Bearer ' + apiKey } });
+      const detailJ = await detailR.json().catch(() => ({}));
+      return res.status(200).json({ ok: true, domain: detailJ.name, status: detailJ.status, records: detailJ.records });
+    } catch (err) {
+      return res.status(502).json({ ok: false, error: (err && err.message) || 'Could not reach Resend.' });
+    }
+  }
+
   // GET -> read-only Resend health check (API key validity, domain verification,
   // sender-domain match). No email is sent. Passcode-gated like everything else.
   if (req.method === 'GET') {
