@@ -225,6 +225,7 @@
 const FROM_NAME = "Above & Beyond ABA";
 const REPLY_TO = "events@abtaba.com";
 const SITE_BASE = "https://summer-appreciation-event.vercel.app";
+const SEND_DOMAIN = "updates.abtaba.com";
 const RSVP_BASE = SITE_BASE+"/rsvp.html";
 const ICS_BASE = SITE_BASE+"/api/ics";
 const T0 = today0();
@@ -238,6 +239,9 @@ const DIRECTOR_NAMES = {
   "mwolf@abtaba.com": "Marc Wolf",
 };
 function directorName(id){ const email=getDirector(id); return email ? (DIRECTOR_NAMES[email]||null) : null; }
+// A distinct sending address per director (same verified domain, different local
+// part) so mail clients don't collapse multiple names into one shared address.
+function directorFromAddr(id){ const email=getDirector(id); if(!email) return null; return email.split("@")[0]+"@"+SEND_DOMAIN; }
 
 let WINTER_EVENTS = [];
 let SERVER_JOBS={}, SERVER_PLS={}, SERVER_DIRECTORS={}, AUD_COUNTS={}, RSVP_COUNTS={};
@@ -317,6 +321,7 @@ function template(e,r){
       return {
         subject: `You're Invited: ${place} Winter Holiday Party`,
         fromName: dName,
+        fromAddr: directorFromAddr(e.id),
         replyTo: getDirector(e.id),
         body: `Dear Team,\n\nAs we close out another incredible year together, I wanted to personally invite you to the ${place} Winter Holiday Party. This year has been full of hard work and dedication, and so many moments where your commitment truly made a difference. I could not be more grateful to lead such an exceptional team.\n\nThis celebration is our way of saying thank you, and I truly hope you'll join us for an evening of good food, good company, and well-deserved relaxation.\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\nWarmly,\n${dName}`
       };
@@ -346,6 +351,7 @@ function buildJob(e,r){
   const body=bEl?bEl.value:t.body;
   const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:t.replyTo||REPLY_TO};
   if(t.fromName) job.fromName=t.fromName;
+  if(t.fromAddr) job.fromAddr=t.fromAddr;
   if(r.kind==="pl"){
     job.plEmail=getPL(e.id).email;
     const dir=getDirector(e.id);
