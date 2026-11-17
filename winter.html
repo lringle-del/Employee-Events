@@ -76,6 +76,8 @@
   .rp-tools select,.rp-tools input[type=search]{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fffdf8;color:var(--ink)}
   .rp-tools input[type=search]{flex:1;min-width:200px}
   .rp-chk{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+  .rp-btn{font-family:inherit;font-size:13px;font-weight:700;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer}
+  .rp-btn.on{background:var(--frost);border-color:var(--frost);color:#fff}
   .rp-table{width:100%;border-collapse:collapse;font-size:14px}
   .rp-table th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--biscuit)}
   .rp-table td{padding:9px 10px;border-bottom:1px solid var(--line)}
@@ -227,18 +229,20 @@
       <span><b style="background:#dcf2e6;border:1px solid #8fd3b3"></b>Email — scheduled</span>
       <span><b style="background:#2f9e6f;border:1px solid #2f9e6f"></b>Email — sent</span>
     </div>
-
-    <div class="rp" id="rsvpPanel">
-      <div class="rp-head"><h2>Who's RSVP'd</h2><div class="rp-sum" id="rpSum"></div></div>
-      <div class="rp-tools">
-        <select id="rpState" onchange="renderRsvpList()"><option value="">All states</option></select>
-        <input type="search" id="rpSearch" placeholder="Search name or email" oninput="renderRsvpList()">
-        <label class="rp-chk"><input type="checkbox" id="rpDecl" onchange="renderRsvpList()"> Show can't-make-it</label>
-      </div>
-      <div id="rpBody"></div>
-    </div>
   </div>
   <div id="budgetView" class="hidden"></div>
+
+  <!-- Shown under both the Events list and the Calendar (hidden on Budget) -->
+  <div class="rp" id="rsvpPanel">
+    <div class="rp-head"><h2>Who's RSVP'd</h2><div class="rp-sum" id="rpSum"></div></div>
+    <div class="rp-tools">
+      <select id="rpState" onchange="renderRsvpList()"><option value="">All states</option></select>
+      <input type="search" id="rpSearch" placeholder="Search name or email" oninput="renderRsvpList()">
+      <label class="rp-chk"><input type="checkbox" id="rpDecl" onchange="renderRsvpList()"> Show can't-make-it</label>
+      <button type="button" class="rp-btn" id="rpHideTests" onclick="toggleTests()">Hide test RSVPs</button>
+    </div>
+    <div id="rpBody"></div>
+  </div>
 
   <footer>
     Above &amp; Beyond ABA · Winter Holiday Parties
@@ -254,7 +258,9 @@
 
 <script>
 const FROM_NAME = "Above & Beyond ABA";
-const REPLY_TO = "events@abtaba.com";
+const REPLY_TO = "lringle@abtaba.com"; // every winter email: replies come to Liba, not the directors
+// Sender name on every email after the first invite (the invite itself comes from the state director).
+const ORG_NAME = "Above and Beyond ABA Therapy";
 const SITE_BASE = "https://summer-appreciation-event.vercel.app";
 const SEND_DOMAIN = "updates.abtaba.com";
 const RSVP_BASE = SITE_BASE+"/rsvp.html";
@@ -338,6 +344,7 @@ function template(e,r){
 
   if(r.kind==="gift"||r.key==="gift"){
     return {
+      fromName: ORG_NAME,
       subject: `A little something from the ${FROM_NAME} family 🎁`,
       body: `Hi there,\n\n'Tis the season! We wanted to take a moment to say how much we appreciate everything you do, all year round.\n\nA small gift is on its way to you as a token of our thanks. We hope it brings a smile.\n\nWishing you a warm and happy holiday season from all of us.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
@@ -345,6 +352,7 @@ function template(e,r){
   if(r.kind==="pl"){
     const pl=getPL(e.id);
     return {
+      fromName: ORG_NAME,
       subject: `${place} Holiday Party: PL Details`,
       body: `Hi ${pl.name||"there"},\n\nThank you so much for helping lead the ${place} Winter Holiday Party. We're so excited to celebrate the team with you!\n\n${details}${calLine}\n\nA couple of things to take care of:\n- Arrive early to help set up\n- Be there to help the event run smoothly\n- Take a few photos and send them our way afterward\n\nWe'll keep you posted as RSVPs come in. Thank you again for everything you do!\n\nWarm regards,\n${FROM_NAME}`
     };
@@ -356,12 +364,12 @@ function template(e,r){
         subject: `You're Invited: ${place} Winter Holiday Party`,
         fromName: dName,
         fromAddr: directorFromAddr(e.id),
-        replyTo: getDirector(e.id),
         flyerUrl: e.flyerUrl,
         body: `Dear Team,\n\nAs we wrap up another incredible year, I want to personally thank you for your hard work, dedication, and the difference you make every day. I'm truly grateful for all that we've accomplished together and excited to celebrate with you at our ${place} Winter Holiday Party!\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\nWarmly,\n${dName}`
       };
     }
     return {
+      fromName: ORG_NAME,
       subject: `🎄 You're invited! ${place} Holiday Party`,
       flyerUrl: e.flyerUrl,
       body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}${calLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
@@ -369,11 +377,13 @@ function template(e,r){
   }
   if(r.key==="att0"){
     return {
+      fromName: ORG_NAME,
       subject: `🎉 Today's the day! ${place} Holiday Party`,
       body: `Hi there,\n\nToday's the day! We can't wait to celebrate you and the whole team this evening.\n\n${details}\n\nSee you soon, let's celebrate!\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
   return { // att3
+    fromName: ORG_NAME,
     subject: `🎁 3 Days Away: ${place} Holiday Party`,
     body: `Hi there,\n\nJust a few more days! We're so looking forward to celebrating with you at the ${place} Winter Holiday Party.\n\n${details}\n\nHaven't RSVP'd yet? Let us know you're coming:\n\n${rsvpLink}\n\nWe can't wait to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
   };
@@ -573,6 +583,7 @@ function setView(v){
   document.getElementById("eventsView").classList.toggle("hidden",v!=="events");
   document.getElementById("calendarView").classList.toggle("hidden",v!=="calendar");
   document.getElementById("budgetView").classList.toggle("hidden",v!=="budget");
+  document.getElementById("rsvpPanel").classList.toggle("hidden",v==="budget");
   renderView();
 }
 
@@ -670,7 +681,16 @@ function renderBudgetView(){
   rows+=`<tr class="grand"><td>Grand total</td><td>${money(grandAllotted)}</td><td>${money(grandSpent)}</td><td>${money(grandAllotted-grandSpent)}</td></tr>`;
   document.getElementById("budgetView").innerHTML=`<table class="budget-table"><thead><tr><th>Event</th><th>Allotted</th><th>Spent</th><th>Remaining</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-/* ===== RSVP list under the calendar: everyone who answered, filter by state, search ===== */
+/* ===== RSVP list under the events/calendar: everyone who answered, filter by state, search ===== */
+// A "test" RSVP is one whose name or email contains the word "test", or that came from
+// the organiser's own address. Name tests "TEST ..." and they hide with one click.
+const TEST_EMAILS=new Set(["lringle@abtaba.com"]);
+let hideTests=false;
+function isTestRsvp(email,name){
+  const e=(email||"").toLowerCase(), n=(name||"").toLowerCase(), rx=/(^|[^a-z])test(ing)?([^a-z]|$)/;
+  return TEST_EMAILS.has(e)||rx.test(e)||rx.test(n);
+}
+function toggleTests(){ hideTests=!hideTests; renderRsvpList(); }
 function renderRsvpList(){
   const host=document.getElementById("rpBody"); if(!host) return;
   const parties=WINTER_EVENTS.filter(e=>!e.giftOnly);
@@ -685,25 +705,30 @@ function renderRsvpList(){
   parties.forEach(e=>{
     if(chosen && e.state!==chosen) return;
     Object.entries(RSVP_ROSTERS[e.id]||{}).forEach(([email,r])=>rows.push({
-      e, email, name:r.name||"", plusOne:!!r.plusOne, no:r.status==="no", known:r.knownRoster, at:r.respondedAt||""
+      e, email, name:r.name||"", plusOne:!!r.plusOne, no:r.status==="no", known:r.knownRoster, at:r.respondedAt||"", test:isTestRsvp(email,r.name)
     }));
   });
-  // Summary follows the state filter only, so searching doesn't change the headcount.
-  const going=rows.filter(r=>!r.no), declined=rows.filter(r=>r.no);
+  const testCount=rows.filter(r=>r.test).length;
+  const tbtn=document.getElementById("rpHideTests");
+  tbtn.textContent=(hideTests?"Show test RSVPs":"Hide test RSVPs")+" ("+testCount+")";
+  tbtn.classList.toggle("on",hideTests);
+  const base=hideTests?rows.filter(r=>!r.test):rows;
+  // Summary follows the state filter and the test toggle, but not the search, so searching doesn't change the headcount.
+  const going=base.filter(r=>!r.no), declined=base.filter(r=>r.no);
   const plus=going.filter(r=>r.plusOne).length;
   document.getElementById("rpSum").innerHTML=`<b>${going.length}</b> RSVPs · <b>${plus}</b> plus-ones · <b>${going.length+plus}</b> expected`+(declined.length?` · ${declined.length} can't make it`:"");
 
-  let shown=rows.filter(r=>showNo||!r.no);
+  let shown=base.filter(r=>showNo||!r.no);
   if(q) shown=shown.filter(r=>r.name.toLowerCase().includes(q)||r.email.toLowerCase().includes(q));
   shown.sort((a,b)=>(a.e.state||"").localeCompare(b.e.state||"")||(a.e.city||"").localeCompare(b.e.city||"")||a.name.localeCompare(b.name));
   if(!shown.length){
-    host.innerHTML=`<div class="rp-empty">${rows.length?"No one matches that search.":"No RSVPs yet."}</div>`;
+    host.innerHTML=`<div class="rp-empty">${base.length?"No one matches that search.":(rows.length?"Only test RSVPs so far (hidden).":"No RSVPs yet.")}</div>`;
     return;
   }
   host.innerHTML=`<table class="rp-table"><thead><tr><th>Name</th><th class="hide-sm">Email</th><th>Location</th><th>Plus one</th><th>Answer</th><th class="hide-sm">Responded</th></tr></thead><tbody>`+
     shown.map(r=>{
       const when=r.at?new Date(r.at).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"";
-      return `<tr class="${r.no?"no":""}"><td><b>${esc(r.name||"—")}</b>${r.known===false?'<span class="rp-flag">not on roster</span>':""}</td>`+
+      return `<tr class="${r.no?"no":""}"><td><b>${esc(r.name||"—")}</b>${r.test?'<span class="rp-flag">test</span>':""}${r.known===false?'<span class="rp-flag">not on roster</span>':""}</td>`+
         `<td class="hide-sm"><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></td>`+
         `<td>${esc(r.e.city||r.e.state)}</td>`+
         `<td>${r.no?"—":(r.plusOne?"<b>Yes</b>":"No")}</td>`+
@@ -711,7 +736,7 @@ function renderRsvpList(){
         `<td class="hide-sm">${esc(when)}</td></tr>`;
     }).join("")+`</tbody></table>`;
 }
-function renderView(){ if(curView==="events") renderEventsView(); else if(curView==="calendar"){ renderCal(); renderRsvpList(); } else renderBudgetView(); }
+function renderView(){ if(curView==="events"){ renderEventsView(); renderRsvpList(); } else if(curView==="calendar"){ renderCal(); renderRsvpList(); } else renderBudgetView(); }
 function refreshAll(){ renderView(); }
 
 /* ===== modal ===== */
