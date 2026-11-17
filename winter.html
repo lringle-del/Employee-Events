@@ -63,6 +63,7 @@
   .rem-chip.s-needs{background:#fdeccd;border-color:#eabb6a;color:#9a6b12}
   .rem-chip.s-sched{background:#dcf2e6;border-color:#8fd3b3;color:#1f7a56}
   .rem-chip.s-sent{background:var(--green);border-color:var(--green);color:#fff}
+  .ev-chip.ready{background:var(--green)}
   .legend{display:flex;gap:16px;flex-wrap:wrap;margin:12px 2px 0;font-size:12px;color:var(--muted)}
   .legend b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:5px}
   .cal-note{font-size:13px;color:var(--muted);margin:0 0 10px}
@@ -95,6 +96,9 @@
   .pill.needs{background:#fdeccd;color:#9a6b12}
   .pill.sched{background:#dcf2e6;color:#1f7a56}
   .pill.sent{background:var(--green);color:#fff}
+  .pill.ready{background:var(--green);color:#fff}
+  .card.ready{border-color:var(--green);border-left-width:6px;background:#f1faf5}
+  .card.ready:hover{background:#e6f5ed}
 
   .budget-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
   .budget-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:10px 14px;border-bottom:2px solid var(--parchment);background:#faf6ee}
@@ -230,6 +234,9 @@ const SEND_DOMAIN = "updates.abtaba.com";
 const RSVP_BASE = SITE_BASE+"/rsvp.html";
 const ICS_BASE = SITE_BASE+"/api/ics";
 const T0 = today0();
+/* Parties marked green because their invite is ready to go out. This is only a
+   visual flag for the dashboard; it does not send or schedule anything. */
+const READY_TO_SEND = new Set(["w-omaha","w-atlanta"]); // Nebraska, Georgia (Atlanta)
 
 // Director full names, keyed by their email (api/director.js only stores the
 // email). Used to send the Invite as a formal letter from that director --
@@ -578,7 +585,7 @@ function renderCal(){
     const isToday=dbetween(dt,T0)===0;
     const evs=eventsOn(dt.getFullYear(),dt.getMonth(),dt.getDate());
     const rem=remindersOn(dt.getFullYear(),dt.getMonth(),dt.getDate());
-    const evHtml=evs.map(e=>`<button class="ev-chip" onclick="openModal('${e.id}')" title="${esc(e.venue||"")}">❄️ ${esc(e.city||e.state)}</button>`).join("");
+    const evHtml=evs.map(e=>{ const rdy=READY_TO_SEND.has(e.id); return `<button class="ev-chip${rdy?' ready':''}" onclick="openModal('${e.id}')" title="${esc(e.venue||"")}${rdy?' · ready to send':''}">${rdy?'✓':'❄️'} ${esc(e.city||e.state)}</button>`; }).join("");
     const remHtml=rem.map(x=>{
       const st=getStatus(x.e.id,x.r.key);
       if(st==="skipped") return "";
@@ -601,7 +608,8 @@ function renderEventsView(){
     const dateHtml = e.date ? (()=>{ const d=ymd(e.date); return `<div class="db"><div class="mo">${MO[d.getMonth()]}</div><div class="day">${d.getDate()}</div><div class="wd">${WD[d.getDay()]}</div></div>`; })() : `<div class="db tbd">TBD</div>`;
     const rc=e.giftOnly?null:rsvpCount(e.id);
     const budgetTxt = e.budgetAllotted!=null ? (money(e.budgetSpent||0)||"$0")+" / "+money(e.budgetAllotted) : "";
-    return `<div class="card" onclick="openModal('${e.id}')">
+    const ready=READY_TO_SEND.has(e.id);
+    return `<div class="card${ready?' ready':''}" onclick="openModal('${e.id}')">
       ${dateHtml}
       <div class="ci">
         <div class="t">${esc(place)}${e.giftOnly?' <span style="font-size:12px;color:var(--amber)">(gift only, no party)</span>':''}</div>
@@ -610,7 +618,7 @@ function renderEventsView(){
       <div class="cside">
         ${rc?`<b>${rc.total}</b> RSVP'd (${rc.yes} + ${rc.plusOnes} guests)`:""}
         ${budgetTxt?`<span>${budgetTxt}</span>`:""}
-        <div class="pillset">${eventPills(e)}</div>
+        <div class="pillset">${ready?'<span class="pill ready">✓ Ready to send</span>':''}${eventPills(e)}</div>
       </div>
     </div>`;
   }).join("");
