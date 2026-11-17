@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const events = await readJSON(KEY, {});
   const e = events[eventId];
   if (!e) return res.status(404).json({ error: 'No such event.' });
-  if (!e.startISO || !e.endISO) return res.status(409).json({ error: 'This event’s date/time isn’t set yet.' });
+  if (!e.startISO) return res.status(409).json({ error: 'This event’s date/time isn’t set yet.' });
 
   const location = [e.venue, e.address].filter(Boolean).join(', ');
   const ics = [
@@ -25,7 +25,9 @@ export default async function handler(req, res) {
     'UID:' + eventId + '@abtaba.com',
     'DTSTAMP:' + stamp(new Date().toISOString()) + 'Z',
     'DTSTART:' + stamp(e.startISO),
-    'DTEND:' + stamp(e.endISO),
+    // End time is optional. With none, ask for a 1-hour block rather than a zero-length
+    // event, which some calendar apps show as a thin line or drop.
+    e.endISO ? 'DTEND:' + stamp(e.endISO) : 'DURATION:PT1H',
     'SUMMARY:' + fold((e.city || e.state) + ' Winter Appreciation Party'),
     location ? 'LOCATION:' + fold(location) : null,
     'END:VEVENT',

@@ -18,9 +18,11 @@ export default async function handler(req, res) {
     const counts = {};
     for (const eventId in all) {
       const entries = Object.values(all[eventId]);
-      const yes = entries.length;
-      const plusOnes = entries.filter((r) => r.plusOne).length;
-      counts[eventId] = { yes, plusOnes, total: yes + plusOnes };
+      // Records saved before the decline button existed have no status: they're all yeses.
+      const going = entries.filter((r) => r.status !== 'no');
+      const yes = going.length;
+      const plusOnes = going.filter((r) => r.plusOne).length;
+      counts[eventId] = { yes, plusOnes, total: yes + plusOnes, no: entries.length - yes };
     }
     // Rosters are included openly (no passcode) -- the user confirmed this should
     // match the Summer RSVP dashboard's always-visible viewing model.
@@ -51,7 +53,8 @@ export default async function handler(req, res) {
     const eventId = body && body.eventId;
     const email = (body && body.email || '').trim().toLowerCase();
     const name = (body && body.name || '').trim();
-    const plusOne = !!(body && body.plusOne);
+    const status = body && body.status === 'no' ? 'no' : 'yes';
+    const plusOne = status === 'yes' && !!(body && body.plusOne);
     if (!eventId) return res.status(400).json({ error: 'eventId required.' });
     if (!EMAIL_RX.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
 
@@ -64,7 +67,8 @@ export default async function handler(req, res) {
 
     const all = await readJSON(KEY, {});
     all[eventId] = all[eventId] || {};
-    all[eventId][email] = { name, plusOne, knownRoster, respondedAt: new Date().toISOString() };
+    // Keyed by email, so answering again (e.g. yes, then "can't make it") replaces the earlier answer.
+    all[eventId][email] = { name, plusOne, status, knownRoster, respondedAt: new Date().toISOString() };
     await writeJSON(KEY, all);
     return res.status(200).json({ ok: true, eventId });
   }

@@ -301,7 +301,7 @@ function template(e,r){
   const details = hasDate ? `📅 ${fmtLong(ymd(e.date))}\n🕕 ${e.time||"time TBD"}\n📍 ${where||"venue TBD"}${link}` : "📅 Date & venue: coming soon!";
   const rsvpLink = RSVP_BASE+"?event="+e.id;
   const rsvpLine = `\n\nLet us know you're coming (and if you're bringing a plus one):\n\n${rsvpLink}`;
-  const calLine = (e.startISO&&e.endISO) ? `\n\nAdd it to your calendar:\n\n${ICS_BASE}?eventId=${e.id}` : "";
+  const calLine = e.startISO ? `\n\nAdd it to your calendar:\n\n${ICS_BASE}?eventId=${e.id}` : "";
 
   if(r.kind==="gift"||r.key==="gift"){
     return {

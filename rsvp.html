@@ -30,6 +30,7 @@
   .plusone button.sel{background:var(--frost);border-color:var(--frost);color:#fff}
   .btn{width:100%;margin-top:20px;font-family:inherit;font-weight:700;font-size:15px;padding:13px;border-radius:11px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;box-shadow:var(--shadow)}
   .btn:active{transform:translateY(1px)}
+  .btn.decline{margin-top:10px;background:var(--white);color:var(--muted);border:1px solid var(--line);box-shadow:none;font-weight:600}
   .err{color:#b3261e;font-size:13px;margin-top:10px;display:none}
   .confirm{text-align:center;padding:10px 0}
   .confirm .big{font-size:42px}
@@ -82,31 +83,46 @@ function render(){
         <button type="button" id="pyes" onclick="setPlusOne(true)">Yes</button>
         <button type="button" id="pno" onclick="setPlusOne(false)">No</button>
       </div>
-      <button class="btn" onclick="submitRsvp()">RSVP</button>
+      <button class="btn" onclick="submitRsvp('yes')">RSVP</button>
+      <button class="btn decline" onclick="submitRsvp('no')">Sorry, I can't make it</button>
       <div class="err" id="err"></div>
     </div>`;
 }
 function setPlusOne(v){ plusOne=v; document.getElementById("pyes").classList.toggle("sel",v===true); document.getElementById("pno").classList.toggle("sel",v===false); }
 
-async function submitRsvp(){
+async function submitRsvp(status){
+  status = status==="no" ? "no" : "yes";
   const name=document.getElementById("name").value.trim();
   const email=document.getElementById("email").value.trim();
   const errEl=document.getElementById("err");
-  if(!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || plusOne===null){
-    errEl.textContent="Please fill in your name, a valid email, and let us know about a plus one.";
+  const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+  // Only a "yes" needs the plus-one answer; declining just needs to know who you are.
+  if(!name || !emailOk || (status==="yes" && plusOne===null)){
+    errEl.textContent = status==="yes"
+      ? "Please fill in your name, a valid email, and let us know about a plus one."
+      : "Please fill in your name and a valid email so we know who is replying.";
     errEl.style.display="block";
     return;
   }
   errEl.style.display="none";
   try{
-    const res=await fetch("/api/rsvp",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({eventId,name,email,plusOne})});
+    const res=await fetch("/api/rsvp",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({eventId,name,email,plusOne:status==="yes"?plusOne:false,status})});
     if(!res.ok){ const j=await res.json().catch(()=>({})); errEl.textContent=j.error||"Something went wrong — please try again."; errEl.style.display="block"; return; }
-    renderConfirmation();
+    renderConfirmation(status);
   }catch{ errEl.textContent="Couldn't reach the server — please try again."; errEl.style.display="block"; }
 }
-function renderConfirmation(){
+function renderConfirmation(status){
   const place=EVENT.city||EVENT.state;
-  const calBtn = (EVENT.startISO && EVENT.endISO) ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}">📅 Add to Calendar</a>` : "";
+  if(status==="no"){
+    document.getElementById("card").innerHTML=`
+    <div class="body confirm">
+      <div class="big">💙</div>
+      <h2>Thanks for letting us know</h2>
+      <p>We'll miss you at the ${esc(place)} Holiday Party. If your plans change, just use the link in your invite again.</p>
+    </div>`;
+    return;
+  }
+  const calBtn = EVENT.startISO ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}">📅 Add to Calendar</a>` : "";
   document.getElementById("card").innerHTML=`
     <div class="body confirm">
       <div class="big">🎉</div>
