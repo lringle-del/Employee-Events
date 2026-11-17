@@ -37,6 +37,7 @@
   .confirm h2{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;margin:10px 0 6px}
   .confirm p{color:var(--muted);font-size:14px}
   .cal-btn{display:inline-block;margin-top:14px;font-weight:700;font-size:14px;color:#fff;background:var(--green);padding:11px 20px;border-radius:10px;text-decoration:none}
+  .cal-btn.alt{background:var(--white);color:var(--lagoon);border:1px solid var(--line);margin-top:8px;padding:9px 18px;font-weight:600}
   .hidden{display:none!important}
 </style>
 </head>
@@ -122,7 +123,9 @@ function renderConfirmation(status){
     </div>`;
     return;
   }
-  const calBtn = EVENT.startISO ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}">📅 Add to Calendar</a>` : "";
+  const calBtn = EVENT.startISO
+    ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}&google=1">📅 Add to Google Calendar</a><br><a class="cal-btn alt" href="/api/ics?eventId=${encodeURIComponent(eventId)}">Outlook / Apple Calendar</a>`
+    : "";
   document.getElementById("card").innerHTML=`
     <div class="body confirm">
       <div class="big">🎉</div>
