@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Add to Calendar · Above &amp; Beyond ABA Holiday Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vanilla:#f5f0e5; --frost:#2f8fc9; --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
+    --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff;
+    --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px 16px}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(28,69,140,.2);max-width:460px;width:100%;overflow:hidden}
+  .head{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;padding:26px 26px 22px}
+  .head .logo{font-family:'Fredoka','Inter',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
+  .head h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:26px;margin:8px 0 0}
+  .body{padding:22px 26px 28px}
+  .detail{font-size:14px;color:var(--muted);margin-bottom:4px}
+  .detail b{color:var(--ink)}
+  .ask{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:20px 0 4px}
+  a.pick{display:block;text-align:center;text-decoration:none;font-weight:700;font-size:15px;padding:13px;border-radius:11px;margin-top:10px;background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;box-shadow:var(--shadow)}
+  a.pick.alt{background:var(--white);color:var(--lagoon);border:1px solid var(--line);box-shadow:none}
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+<div class="card" id="card">Loading…</div>
+
+<script>
+const eventId = new URLSearchParams(location.search).get("event") || "";
+const MOL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WDL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+function fmtLong(iso){ const [y,m,d]=iso.split("-").map(Number); const dt=new Date(y,m-1,d); return WDL[dt.getDay()]+", "+MOL[dt.getMonth()]+" "+dt.getDate(); }
+function esc(s){return(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+async function init(){
+  let ev=null;
+  try{ const r=await fetch("/api/winter-events",{cache:"no-store"}); ev=((await r.json()).events||[]).find(e=>e.id===eventId); }catch{}
+  const card=document.getElementById("card");
+  if(!ev || !ev.startISO){
+    card.innerHTML=`<div class="body"><p>We couldn't find a date for that event yet. Please use the link from your invite email.</p></div>`;
+    return;
+  }
+  const place=ev.city||ev.state;
+  const where=[ev.venue,ev.address].filter(Boolean).join(", ");
+  const q=encodeURIComponent(eventId);
+  card.innerHTML=`
+    <div class="head"><div class="logo">Above &amp; Beyond ABA</div><h1>🎄 ${esc(place)} Holiday Party</h1></div>
+    <div class="body">
+      <div class="detail">📅 <b>${ev.date?esc(fmtLong(ev.date)):"Date coming soon"}</b></div>
+      <div class="detail">🕕 <b>${esc(ev.time||"time coming soon")}</b></div>
+      <div class="detail">📍 <b>${esc(where||"venue coming soon")}</b></div>
+      <div class="ask">Which calendar do you use?</div>
+      <a class="pick" href="/api/ics?eventId=${q}&google=1">Google Calendar</a>
+      <a class="pick alt" href="/api/ics?eventId=${q}&outlook=1">Outlook</a>
+      <a class="pick alt" href="/api/ics?eventId=${q}">Apple Calendar or other</a>
+      <div class="note">Apple Calendar: on an iPhone or iPad it opens straight away. On a computer it downloads a small file. Open it to add the event.</div>
+    </div>`;
+}
+init();
+</script>
+</body>
+</html>

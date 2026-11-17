@@ -124,7 +124,7 @@ function renderConfirmation(status){
     return;
   }
   const calBtn = EVENT.startISO
-    ? `<a class="cal-btn" href="/api/ics?eventId=${encodeURIComponent(eventId)}&google=1">📅 Add to Google Calendar</a><br><a class="cal-btn alt" href="/api/ics?eventId=${encodeURIComponent(eventId)}&outlook=1">Outlook Calendar</a> <a class="cal-btn alt" href="/api/ics?eventId=${encodeURIComponent(eventId)}">Apple Calendar</a>`
+    ? `<a class="cal-btn" href="/calendar.html?event=${encodeURIComponent(eventId)}">📅 Add to Calendar</a>`
     : "";
   document.getElementById("card").innerHTML=`
     <div class="body confirm">
