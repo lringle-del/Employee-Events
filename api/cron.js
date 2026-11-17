@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { sendJob, tokenFor, audienceKey } from '../lib/sendJob.js';
+import { sendJob, tokenFor, audienceKey, pendingOnly } from '../lib/sendJob.js';
 
 const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json';
 const DIGEST_TO = 'lringle@abtaba.com';
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
   const sched = await readJSON(SKEY, {});
   const auds = await readJSON(AKEY, {});
   const dirs = await readJSON(DKEY, {});
+  const rsvps = await readJSON('rsvps.json', {}); // for "nudge" reminders that skip people who already answered
   const today = new Date().toISOString().slice(0, 10);
   const previews = [], sends = [];
 
@@ -38,8 +39,8 @@ export default async function handler(req, res) {
 
     // Phase 1 — day-before preview (once), only if not yet approved
     if (!j.okToSend && !j.previewSentAt && today >= dayBefore(j.sendOn)) {
-      const count = j.kind === 'pl' ? 1 : ((auds[audienceKey(j)] || []).length);
-      const who = j.kind === 'pl' ? (j.plEmail || '(no PL email)') : (count + ' attendees (' + j.label + ')');
+      const count = j.kind === 'pl' ? 1 : pendingOnly(j, auds[audienceKey(j)] || [], rsvps).length;
+      const who = j.kind === 'pl' ? (j.plEmail || '(no PL email)') : (count + ' attendees' + (j.onlyNonResponders ? " who haven't responded yet" : '') + ' (' + j.label + ')');
       const link = origin + '/api/approve-send?id=' + encodeURIComponent(id) + '&t=' + tokenFor(id);
       if (dry) { previews.push({ id, to: who, sendOn: j.sendOn }); continue; }
       try {
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
 
     // Phase 2 — send for real once approved and due
     if (j.okToSend && today >= j.sendOn) {
-      if (dry) { sends.push({ id, wouldSend: j.kind === 'pl' ? 1 : (auds[audienceKey(j)] || []).length }); continue; }
+      if (dry) { sends.push({ id, wouldSend: j.kind === 'pl' ? 1 : pendingOnly(j, auds[audienceKey(j)] || [], rsvps).length }); continue; }
       try {
         const r = await sendJob(j, { directors: dirs, audiences: auds });
         j.sentAt = new Date().toISOString(); j.sentCount = r.sent; sched[id] = j; await writeJSON(SKEY, sched);

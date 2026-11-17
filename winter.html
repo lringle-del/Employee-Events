@@ -298,6 +298,9 @@ function getPL(id){ return SERVER_PLS[id]||{name:"",email:""}; }
 function getDirector(id){ return SERVER_DIRECTORS[id]||""; }
 function audienceCount(label){ const key="Winter "+label; return Object.prototype.hasOwnProperty.call(AUD_COUNTS,key)?AUD_COUNTS[key]:null; }
 function rsvpCount(id){ return RSVP_COUNTS[id]||{yes:0,plusOnes:0,total:0}; }
+// Rough count of invitees who haven't answered: list size minus answers received. Only an
+// estimate; the server matches answers to the list by email at the moment the nudge sends.
+function nudgeLeft(e){ const ac=audienceCount(e.label); return ac==null?0:Math.max(0,ac-Object.keys(RSVP_ROSTERS[e.id]||{}).length); }
 function getStatus(id,key){
   const j=SERVER_JOBS[id+":"+key]; if(!j) return "draft";
   if(j.sentAt) return "sent";
@@ -322,6 +325,15 @@ function winterReminders(e){
   const list=[
     {kind:"att", key:"invite", abbr:"Invite", name:"Invite + RSVP", date:T0},
   ];
+  // RSVP nudge: 3 days after the invite goes out, only to invitees who haven't answered yet.
+  // Dated from the invite's real send date once it's scheduled (today until then). Skipped if
+  // the party would already have happened by then. Like every email it needs your approval:
+  // you get the preview email the day before and nothing sends until you approve it.
+  const inv=SERVER_JOBS[e.id+":invite"];
+  const nudgeDate=addDays((inv&&inv.sendOn)?ymd(inv.sendOn):T0,3);
+  if(!e.date || dbetween(ymd(e.date),nudgeDate)>0){
+    list.push({kind:"att", key:"nudge", abbr:"Nudge · +3 days", name:"RSVP nudge (3 days after the invite, only people who haven't answered)", date:nudgeDate, onlyNonResponders:true});
+  }
   if(e.date){
     const d=ymd(e.date);
     list.push({kind:"pl",  key:"pl3",  abbr:"PL · −3 days", name:"PL reminder (3 days before)", date:addDays(d,-3)});
@@ -375,6 +387,13 @@ function template(e,r){
       body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}${calLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
     };
   }
+  if(r.key==="nudge"){
+    return {
+      fromName: ORG_NAME,
+      subject: `Haven't RSVP'd yet? ${place} Holiday Party`,
+      body: `Hi there,\n\nWe haven't heard from you yet about the ${place} Winter Holiday Party, and we'd love to celebrate with you!\n\n${details}\n\nPlease let us know whether you can make it (and if you're bringing a plus one):\n\n${rsvpLink}${calLine}\n\nWe hope to see you there.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+    };
+  }
   if(r.key==="att0"){
     return {
       fromName: ORG_NAME,
@@ -399,6 +418,7 @@ function buildJob(e,r){
   if(t.fromName) job.fromName=t.fromName;
   if(t.fromAddr) job.fromAddr=t.fromAddr;
   if(t.flyerUrl) job.flyerUrl=t.flyerUrl;
+  if(r.onlyNonResponders) job.onlyNonResponders=true; // the server leaves out anyone who has already RSVP'd
   if(r.kind==="pl"){
     job.plEmail=getPL(e.id).email;
     const dir=getDirector(e.id);
@@ -413,7 +433,7 @@ async function approve(key){
   const e=WINTER_EVENTS.find(x=>x.id===openId);const r=winterReminders(e).find(x=>x.key===key);
   if(r.kind==="pl" && !getPL(openId).email){ toast("Add the PL's email above before approving."); return; }
   const ac=audienceCount(e.label);
-  const who=r.kind==="pl"?getPL(openId).email:((ac!=null?ac:0)+" recipients ("+e.label+")");
+  const who=r.kind==="pl"?getPL(openId).email:(r.onlyNonResponders?("people on the "+e.label+" list who haven't answered yet (about "+nudgeLeft(e)+")"):((ac!=null?ac:0)+" recipients ("+e.label+")"));
   const sub=document.getElementById("subj:"+key).value;
   const dueNow=dbetween(r.date,T0)<=0;
   if(!confirm(`Approve & schedule this email?\n\n"${sub}"\n\n${dueNow?"It will send AS SOON as you approve & send it (next step).":"It will send on "+fmtShort(r.date)+"."}`)) return;
@@ -426,7 +446,7 @@ async function approve(key){
 async function confirmSend(key){
   const e=WINTER_EVENTS.find(x=>x.id===openId);const r=winterReminders(e).find(x=>x.key===key);
   const ac=audienceCount(e.label);
-  const who=r.kind==="pl"?getPL(openId).email:((ac!=null?ac:0)+" recipients ("+e.label+")");
+  const who=r.kind==="pl"?getPL(openId).email:(r.onlyNonResponders?("people on the "+e.label+" list who haven't answered yet (about "+nudgeLeft(e)+")"):((ac!=null?ac:0)+" recipients ("+e.label+")"));
   const dueNow=dbetween(r.date,T0)<=0;
   if(!confirm(`Approve "${document.getElementById("subj:"+key).value}"\n\nTo: ${who}\n${dueNow?"This will SEND now.":"It will send on "+fmtShort(r.date)+"."}\n\nProceed?`)) return;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
@@ -753,7 +773,7 @@ function openModal(id){
     const status=getStatus(id,r.key);
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
-    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((ac!=null?ac:0)+" recipients"+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
+    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
     let controls;
     if(status==="draft"){
       controls=`<button class="btn primary" onclick="approve('${r.key}')">✓ Approve &amp; schedule</button>

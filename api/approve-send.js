@@ -1,5 +1,5 @@
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { sendJob, tokenFor, audienceKey } from '../lib/sendJob.js';
+import { sendJob, tokenFor, audienceKey, pendingOnly } from '../lib/sendJob.js';
 
 const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -23,8 +23,9 @@ export default async function handler(req, res) {
   if (job.sentAt) return res.status(200).send(page('Already sent', 'This reminder has already gone out — nothing to do.'));
 
   const auds = await readJSON(AKEY, {});
-  const count = job.kind === 'pl' ? 1 : ((auds[audienceKey(job)] || []).length);
-  const who = job.kind === 'pl' ? (job.plEmail || '(no PL email)') : (count + ' attendees (' + job.label + ')');
+  const rsvps = job.onlyNonResponders ? await readJSON('rsvps.json', {}) : null;
+  const count = job.kind === 'pl' ? 1 : pendingOnly(job, auds[audienceKey(job)] || [], rsvps).length;
+  const who = job.kind === 'pl' ? (job.plEmail || '(no PL email)') : (count + ' attendees' + (job.onlyNonResponders ? " who haven't responded yet" : '') + ' (' + job.label + ')');
 
   if (req.method === 'POST') {
     job.okToSend = true;
