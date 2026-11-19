@@ -259,10 +259,8 @@
 <script>
 const FROM_NAME = "Above & Beyond ABA";
 const REPLY_TO = "lringle@abtaba.com"; // every winter email: replies come to Liba, not the directors
-// Sender name on every email after the first invite (the invite itself comes from the state director).
-const ORG_NAME = "Above and Beyond ABA Therapy";
+const ORG_NAME = "Above and Beyond ABA Therapy"; // sender name on every winter email
 const SITE_BASE = "https://summer-appreciation-event.vercel.app";
-const SEND_DOMAIN = "updates.abtaba.com";
 const RSVP_BASE = SITE_BASE+"/rsvp.html";
 const ICS_BASE = SITE_BASE+"/api/ics";
 const T0 = today0();
@@ -279,9 +277,6 @@ const DIRECTOR_NAMES = {
   "mwolf@abtaba.com": "Marc Wolf",
 };
 function directorName(id){ const email=getDirector(id); return email ? (DIRECTOR_NAMES[email]||null) : null; }
-// A distinct sending address per director (same verified domain, different local
-// part) so mail clients don't collapse multiple names into one shared address.
-function directorFromAddr(id){ const email=getDirector(id); if(!email) return null; return email.split("@")[0]+"@"+SEND_DOMAIN; }
 
 let WINTER_EVENTS = [];
 let SERVER_JOBS={}, SERVER_PLS={}, SERVER_DIRECTORS={}, AUD_COUNTS={}, RSVP_COUNTS={}, RSVP_ROSTERS={};
@@ -371,20 +366,12 @@ function template(e,r){
   }
   if(r.key==="invite"){
     const dName=directorName(e.id);
-    if(dName){
-      return {
-        subject: `You're Invited: ${place} Winter Holiday Party`,
-        fromName: dName,
-        fromAddr: directorFromAddr(e.id),
-        flyerUrl: e.flyerUrl,
-        body: `Dear Team,\n\nAs we wrap up another incredible year, I want to personally thank you for your hard work, dedication, and the difference you make every day. I'm truly grateful for all that we've accomplished together and excited to celebrate with you at our ${place} Winter Holiday Party!\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\nWarmly,\n${dName}`
-      };
-    }
+    const signoff=dName?`Warmly,\n${dName}`:`Warm regards,\nThe ${FROM_NAME} Team`;
     return {
       fromName: ORG_NAME,
-      subject: `🎄 You're invited! ${place} Holiday Party`,
+      subject: `You're Invited: ${place} Winter Holiday Party`,
       flyerUrl: e.flyerUrl,
-      body: `Hi there,\n\n'Tis the season to celebrate! We're so excited to invite you to the ${place} Winter Holiday Party, a chance for all of us to come together, relax, and celebrate everything we've accomplished this year as a team.\n\n${details}\n\nFeel free to bring a plus one!${rsvpLine}${calLine}\n\nWe can't wait to celebrate with you.\n\nWarm regards,\nThe ${FROM_NAME} Team`
+      body: `Dear Team,\n\nAs we wrap up another incredible year, I want to personally thank you for your hard work, dedication, and the difference you make every day. I'm truly grateful for all that we've accomplished together and excited to celebrate with you at our ${place} Winter Holiday Party!\n\n${details}\n\nPlease RSVP at your earliest convenience, and feel free to bring a guest.${rsvpLine}${calLine}\n\nThank you, again, for everything you do. I'm looking forward to celebrating with you.\n\n${signoff}`
     };
   }
   if(r.key==="nudge"){
@@ -416,7 +403,6 @@ function buildJob(e,r){
   const body=bEl?bEl.value:t.body;
   const job={eventId:e.id,key:r.key,kind:r.kind,label:e.label,sendOn:isoDate(r.date),subject,body,replyTo:t.replyTo||REPLY_TO};
   if(t.fromName) job.fromName=t.fromName;
-  if(t.fromAddr) job.fromAddr=t.fromAddr;
   if(t.flyerUrl) job.flyerUrl=t.flyerUrl;
   if(r.onlyNonResponders) job.onlyNonResponders=true; // the server leaves out anyone who has already RSVP'd
   if(r.kind==="pl"){
