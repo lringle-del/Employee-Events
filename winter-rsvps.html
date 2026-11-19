@@ -96,8 +96,9 @@ async function load(){
 function toggle(id){ document.getElementById("card:"+id).classList.toggle("open"); }
 function render(){
   const parties=EVENTS.filter(e=>!e.giftOnly);
-  let totalYes=0, totalPlus=0, totalNo=0;
+  let totalYes=0, totalPlus=0, totalNo=0, totalEst=0;
   const cards=parties.map(e=>{
+    totalEst+=e.est||0;
     const roster=ROSTERS[e.id]||{};
     const all=Object.entries(roster);
     // Records saved before the decline button existed have no status: they're all yeses.
@@ -116,6 +117,7 @@ function render(){
       <div class="state-head" onclick="toggle('${e.id}')">
         <span class="chev">▶</span>
         <span class="state-name">${esc(e.city||e.state)}</span>
+        ${e.est?`<span class="pill" style="background:var(--muted)">${e.est} expected</span>`:''}
         <span class="pill">${rows.length} RSVPs</span>
         <span class="pill plus">+${plus} plus-ones</span>
         <span class="pill head">${rows.length+plus} total</span>
@@ -133,9 +135,10 @@ function render(){
 
   document.getElementById("app").innerHTML=`
     <div class="tiles">
+      <div class="tile"><div class="k">Expected (est.)</div><div class="v">${totalEst}</div></div>
       <div class="tile"><div class="k">Total RSVPs</div><div class="v">${totalYes}</div></div>
       <div class="tile"><div class="k">Plus-ones</div><div class="v">${totalPlus}</div></div>
-      <div class="tile"><div class="k">Expected headcount</div><div class="v">${totalYes+totalPlus}</div></div>
+      <div class="tile"><div class="k">Confirmed headcount</div><div class="v">${totalYes+totalPlus}</div></div>
       <div class="tile"><div class="k">Can't make it</div><div class="v">${totalNo}</div></div>
       <div class="tile"><div class="k">Parties</div><div class="v">${parties.length}</div></div>
     </div>

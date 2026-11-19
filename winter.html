@@ -659,7 +659,7 @@ function renderEventsView(){
         <div class="s">${e.venue?esc(e.venue):"Venue TBD"}${e.time?" · "+esc(e.time):""}</div>
       </div>
       <div class="cside">
-        ${rc?`<b>${rc.total}</b> RSVP'd (${rc.yes} + ${rc.plusOnes} guests)`:""}
+        ${rc?`<b>${rc.total}</b>${e.est?" of <b>"+e.est+"</b> expected":""} RSVP'd (${rc.yes} + ${rc.plusOnes} guests)`:""}
         ${budgetTxt?`<span>${budgetTxt}</span>`:""}
         <div class="pillset">${ready?'<span class="pill ready">✓ Ready to send</span>':''}${eventPills(e)}</div>
       </div>
@@ -797,7 +797,7 @@ function openModal(id){
         <div class="mf"><div class="l">Venue</div><input id="evenue" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('venue')"></div>
         <div class="mf"><div class="l">Address</div><input id="eaddress" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('address')"></div>
         <div class="mf"><div class="l">Website</div><input id="eurl" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('url')"></div>
-        <div class="mf"><div class="l">RSVPs</div><div style="padding-top:8px;font-weight:600">${rc?`<b>${rc.total}</b> (${rc.yes} yes + ${rc.plusOnes} plus-ones)`:"—"} ${rc&&rc.total?`<button class="lnk" onclick="viewRsvpList('${e.id}')">view list</button>`:""}</div></div>
+        <div class="mf"><div class="l">RSVPs${e.est?" (expected "+e.est+")":""}</div><div style="padding-top:8px;font-weight:600">${rc?`<b>${rc.total}</b> (${rc.yes} yes + ${rc.plusOnes} plus-ones)`:"—"} ${rc&&rc.total?`<button class="lnk" onclick="viewRsvpList('${e.id}')">view list</button>`:""}</div></div>
       </div>`;
 
   document.getElementById("modal").innerHTML=`
