@@ -11,6 +11,18 @@ const SUMMER_APPROVER = 'lringle@abtaba.com';
 const WINTER_APPROVER = 'amarkovich@abtaba.com';
 const approverFor = (eventId) => (eventId && eventId.startsWith('w-') ? WINTER_APPROVER : SUMMER_APPROVER);
 const FORWARD_TO = 'events@abtaba.com';
+const OWNER_EMAIL = 'lringle@abtaba.com';
+
+async function forwardReplyTo(to, subjectLine, text, replyTo){
+  try{
+    const rawFrom = process.env.RESEND_FROM;
+    const sendFrom = `Above and Beyond ABA <${(rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom}>`;
+    await new Resend(process.env.RESEND_API_KEY).emails.send({
+      from: sendFrom, to: [to], replyTo: replyTo || undefined,
+      subject: subjectLine, text,
+    });
+  }catch{ /* best effort */ }
+}
 
 /**
  * Resend inbound webhook (email.received). The preview email's Reply-To is a
@@ -34,17 +46,9 @@ export default async function handler(req, res) {
   const addr = toList.map((a) => a.toLowerCase()).find((a) => a.startsWith('approve.') && a.includes('@'));
   if (!addr) {
     // Not an approval reply — a message landed on updates.abtaba.com. Forward it to a human so nothing is lost.
-    try {
-      const subj = data.subject || '(no subject)';
-      const text = data.text || data.body || data['stripped-text'] || '(The message body is stored in Resend → Inbound for 30 days.)';
-      const rawFrom = process.env.RESEND_FROM;
-      const sendFrom = `Above and Beyond ABA <${(rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom}>`;
-      await new Resend(process.env.RESEND_API_KEY).emails.send({
-        from: sendFrom, to: [FORWARD_TO], replyTo: fromRaw || undefined,
-        subject: 'Fwd (reply): ' + subj,
-        text: `A reply came in to: ${toList.join(', ')}\nFrom: ${fromRaw}\n\n${text}`,
-      });
-    } catch { /* best effort */ }
+    const subj = data.subject || '(no subject)';
+    const text = data.text || data.body || data['stripped-text'] || '(The message body is stored in Resend → Inbound for 30 days.)';
+    await forwardReplyTo(FORWARD_TO, 'Fwd (reply): ' + subj, `A reply came in to: ${toList.join(', ')}\nFrom: ${fromRaw}\n\n${text}`, fromRaw);
     return res.status(200).json({ forwarded: true });
   }
 
@@ -58,15 +62,25 @@ export default async function handler(req, res) {
   if (token !== tokenFor(id)) return res.status(200).json({ ignored: 'bad token' });
   if (fromRaw && !fromRaw.toLowerCase().includes(approverFor(eventId))) return res.status(200).json({ ignored: 'not from approver' });
 
-  // Require the actual word "approved" in the reply -- a stray "ok" or "thanks" (or
-  // any other reply to that thread) must never trigger a real send.
-  const replyText = (data.text || data.body || data['stripped-text'] || '').toLowerCase();
-  if (!replyText.includes('approved')) return res.status(200).json({ ignored: 'reply did not say approved' });
-
   const all = await readJSON(SKEY, {});
   const job = all[id];
   if (!job) return res.status(200).json({ ignored: 'no such job' });
   if (job.sentAt) return res.status(200).json({ ok: true, note: 'already sent' });
+
+  // Require the actual word "approved" in the reply -- a stray "ok" or "thanks" (or
+  // any other reply to that thread) must never trigger a real send. Anything else is
+  // treated as a flagged problem and forwarded to the owner instead of being silently
+  // dropped, so a reported mistake actually gets seen and the job stays unsent.
+  const replyRaw = data.text || data.body || data['stripped-text'] || '';
+  if (!replyRaw.toLowerCase().includes('approved')) {
+    await forwardReplyTo(
+      OWNER_EMAIL,
+      `⚠ Needs a fix, not approved: ${job.subject} (${id})`,
+      `${fromRaw} replied about "${job.subject}" (scheduled to send ${job.sendOn}) without saying "Approved" -- treating this as a reported problem. Nothing was sent.\n\nTheir reply:\n${replyRaw}\n\nFix it on the Admin page, then approve it again from there.`,
+      fromRaw
+    );
+    return res.status(200).json({ ignored: 'reply did not say approved', forwarded: true });
+  }
 
   job.okToSend = true; // schedule it; the daily job sends on its date
   const today = new Date().toISOString().slice(0, 10);
