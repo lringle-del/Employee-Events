@@ -4,6 +4,8 @@ const KEY = 'rsvps.json';
 const EVENTS_KEY = 'winterEvents.json';
 const AUD_KEY = 'audiences.json';
 const EMAIL_RX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// The owner's own test submissions should never count toward real RSVP numbers.
+const TEST_EMAILS = new Set(['lringle@abtaba.com']);
 
 /**
  * Winter RSVP capture — replaces the Microsoft Forms + manual-export workflow.
@@ -57,6 +59,7 @@ export default async function handler(req, res) {
     const plusOne = status === 'yes' && !!(body && body.plusOne);
     if (!eventId) return res.status(400).json({ error: 'eventId required.' });
     if (!EMAIL_RX.test(email)) return res.status(400).json({ error: 'A valid email is required.' });
+    if (TEST_EMAILS.has(email)) return res.status(200).json({ ok: true, eventId, test: true });
 
     const events = await readJSON(EVENTS_KEY, {});
     if (!events[eventId]) return res.status(404).json({ error: 'No such event.' });
