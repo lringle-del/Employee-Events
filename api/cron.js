@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { sendJob, tokenFor, audienceKey, pendingOnly } from '../lib/sendJob.js';
+import { sendJob, sendPreviewEmail, audienceKey, pendingOnly } from '../lib/sendJob.js';
 
 const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json', WKEY = 'winterEvents.json';
 const SUMMER_DIGEST_TO = 'lringle@abtaba.com';
@@ -8,7 +8,6 @@ const WINTER_DIGEST_TO = 'amarkovich@abtaba.com';
 const isWinter = (j) => !!(j && j.eventId && j.eventId.startsWith('w-'));
 const digestFor = (j) => (isWinter(j) ? WINTER_DIGEST_TO : SUMMER_DIGEST_TO);
 const dayBefore = (iso) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
-const escH = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 /**
  * Daily job (Vercel Cron, 13:00 UTC). Two phases per approved job:
@@ -29,7 +28,6 @@ export default async function handler(req, res) {
   // Always show "Above and Beyond ABA" as the sender name, never a bare address.
   const fromAddr = (rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom;
   const from = `Above and Beyond ABA <${fromAddr}>`;
-  const replyDomain = fromAddr.split('@')[1] || 'updates.abtaba.com';
   const resend = new Resend(apiKey);
   const origin = 'https://' + req.headers.host;
 
@@ -46,39 +44,11 @@ export default async function handler(req, res) {
 
     // Phase 1 — day-before preview (once), only if not yet approved
     if (!j.okToSend && !j.previewSentAt && today >= dayBefore(j.sendOn)) {
-      const count = j.kind === 'pl' ? 1 : pendingOnly(j, auds[audienceKey(j)] || [], rsvps).length;
-      const who = j.kind === 'pl' ? (j.plEmail || '(no PL email)') : (count + ' attendees' + (j.onlyNonResponders ? " who haven't responded yet" : '') + ' (' + j.label + ')');
-      const token = tokenFor(id);
-      const link = origin + '/api/approve-send?id=' + encodeURIComponent(id) + '&t=' + token;
-      const replyTo = `approve.${id.replace(':', '.')}.${token}@${replyDomain}`;
-      // Winter jobs can be fixed straight in the Admin page -- deep-link to that
-      // location so a spotted mistake (wrong date, typo, etc.) can actually be
-      // corrected, not just reported.
-      const fixLink = isWinter(j) ? origin + '/admin.html?open=' + encodeURIComponent(j.eventId) + '&key=' + encodeURIComponent(j.key) : null;
-      if (dry) { previews.push({ id, to: who, sendOn: j.sendOn }); continue; }
+      if (dry) { previews.push({ id, to: digestFor(j), sendOn: j.sendOn }); continue; }
       try {
-        await resend.emails.send({
-          from, to: [digestFor(j)], replyTo,
-          subject: `Approve to send — ${j.subject}  (sends ${j.sendOn})`,
-          text: `This reminder is scheduled to send on ${j.sendOn} to ${who}.\n\n`
-            + `----- EMAIL PREVIEW -----\nSubject: ${j.subject}\n\n${j.body}\n----- END PREVIEW -----\n\n`
-            + `✅ APPROVED -- send it: tap this link (or reply "Approved")\n${link}\n\n`
-            + (fixLink ? `✏️ NOT APPROVED -- need to edit: tap this link to fix it in Admin\n${fixLink}\n\n` : '')
-            + `If you do nothing, it will NOT send.`,
-          html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:580px;color:#1c458c">`
-            + `<p style="font-size:15px;color:#333">This reminder is scheduled to send on <b>${escH(j.sendOn)}</b> to <b>${escH(who)}</b>. Review the preview below, then choose one.</p>`
-            + `<p style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5f6b7a;font-weight:700;margin-top:22px">Preview</p>`
-            + `<p style="font-size:14px;color:#333"><b>Subject:</b> ${escH(j.subject)}</p>`
-            + `<pre style="white-space:pre-wrap;background:#f5f0e5;padding:14px;border-radius:10px;font-family:inherit;font-size:14px;color:#333">${escH(j.body)}</pre>`
-            + `<hr style="border:none;border-top:1px solid #e3d6bd;margin:22px 0">`
-            + `<table style="width:100%"><tr>`
-            + `<td style="padding-right:8px"><a href="${link}" style="display:block;text-align:center;background:#2f9e6f;color:#fff;text-decoration:none;padding:14px 10px;border-radius:10px;font-weight:700;font-size:15px">✅ Approved — send it</a></td>`
-            + (fixLink ? `<td style="padding-left:8px"><a href="${fixLink}" style="display:block;text-align:center;background:#fff;color:#1c458c;text-decoration:none;padding:14px 10px;border-radius:10px;font-weight:700;font-size:15px;border:1px solid #c98a1a">✏️ Not approved — need to edit</a></td>` : '')
-            + `</tr></table>`
-            + `<p style="color:#888;font-size:13px;margin-top:14px">You can also just reply to this email with the word "Approved". If you do nothing, it will <b>not</b> be sent.</p></div>`,
-        });
+        await sendPreviewEmail(j, id, { audiences: auds, rsvps, origin });
         j.previewSentAt = new Date().toISOString(); sched[id] = j; await writeJSON(SKEY, sched);
-        previews.push({ id, to: who, sendOn: j.sendOn });
+        previews.push({ id, to: digestFor(j), sendOn: j.sendOn });
       } catch (e) { previews.push({ id, error: e.message }); }
       continue;
     }

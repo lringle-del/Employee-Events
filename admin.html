@@ -234,7 +234,7 @@ const T0 = today0();
 const OWNER_EMAIL = "lringle@abtaba.com";
 let ADMIN_EMAIL = null;
 let ADMINS = [];
-let openId = null, modalTab = "details";
+let openId = null, modalTab = "details", focusKey = null;
 let curPanel = "locations";
 let FILTER = "all";
 
@@ -350,7 +350,8 @@ function openFromUrl(){
   const id=p.get("open");
   if(!id || !WINTER_EVENTS.find(x=>x.id===id)) return;
   openLocation(id);
-  if(p.get("key")) modalTab="emails";
+  const key=p.get("key");
+  if(key){ modalTab="emails"; focusKey=key; }
   renderModal();
 }
 function refreshAll(){ renderFilterTabs(); renderTable(); if(openId) renderModal(); }
@@ -420,6 +421,26 @@ async function sendSample(eventId,key){
     if(res.ok) toast("✓ Sample sent to "+ADMIN_EMAIL+".");
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
+// "Not approved -- need to edit": for an email that's already scheduled/approved
+// (so it has frozen text in schedule.json, disconnected from the live template),
+// save the correction directly onto that job and fire a fresh approval preview
+// right away instead of waiting for the next day's cron run.
+async function editAndRepreview(eventId,key){
+  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
+  if(!confirm(`Save this fix and send a fresh approval email right away?`)) return;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  toast("Saving…");
+  try{
+    const res=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId+":"+key,action:"editAndRepreview",subject:subj,body})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){
+      const jb=SERVER_JOBS[eventId+":"+key]||{}; jb.status="approved"; jb.okToSend=false; jb.previewSentAt=j.previewSent?new Date().toISOString():null; SERVER_JOBS[eventId+":"+key]=jb;
+      refreshAll();
+      toast(j.previewSent ? "✓ Saved — a new approval email is on its way." : "✓ Saved. (The preview email failed to send right now, but it'll go out with the next daily check.)");
+    }else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
 
@@ -561,13 +582,14 @@ function emailSection(e){
     }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
       const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
-      controls=`${approveBtn}${applyBtn}${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      const fixBtn = `<button class="btn ghost" onclick="editAndRepreview('${e.id}','${r.key}')" title="Save this fix and send a fresh approval email right away">✏️ Save &amp; re-send for approval</button>`;
+      controls=`${approveBtn}${fixBtn}${applyBtn}${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
       controls=`${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{
       controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
-    return `<div class="em">
+    const html=`<div class="em">
       <div class="em-h">
         <span class="dot ${r.kind}"></span>
         <span class="name">${r.name}</span>
@@ -581,7 +603,26 @@ function emailSection(e){
         <div class="em-foot">${controls}</div>
       </div>
     </div>`;
-  }).join("");
+    return {key:r.key, html};
+  });
+}
+// focusKey: show that one email first with the rest collapsed behind a toggle
+// (used when deep-linked from a preview email's "Fix it here" link), instead of
+// the full list every time.
+function renderEmailBlocks(e,focusKey){
+  const blocks=emailSection(e);
+  const focus=focusKey?blocks.find(b=>b.key===focusKey):null;
+  if(!focus) return blocks.map(b=>b.html).join("");
+  const rest=blocks.filter(b=>b.key!==focusKey);
+  return focus.html + (rest.length
+    ? `<button class="lnk" id="restEmailsBtn" style="display:block;margin:10px 0" onclick="toggleRestEmails()">▾ See the rest of the emails (${rest.length})</button>
+       <div id="restEmails" class="hidden">${rest.map(b=>b.html).join("")}</div>`
+    : "");
+}
+function toggleRestEmails(){
+  const box=document.getElementById("restEmails"), btn=document.getElementById("restEmailsBtn");
+  const hidden=box.classList.toggle("hidden");
+  btn.textContent = hidden ? `▾ See the rest of the emails (${box.children.length})` : `▴ Hide the rest of the emails`;
 }
 
 /* ===== location status + filters ===== */
@@ -667,7 +708,7 @@ function renderTable(){
 
 /* ===== location detail modal ===== */
 function openLocation(id){
-  openId=id; modalTab="details";
+  openId=id; modalTab="details"; focusKey=null;
   renderModal();
   document.getElementById("backdrop").classList.add("show");
   document.body.style.overflow="hidden";
@@ -675,7 +716,7 @@ function openLocation(id){
 function closeModal(){
   document.getElementById("backdrop").classList.remove("show");
   document.body.style.overflow="";
-  openId=null;
+  openId=null; focusKey=null;
   renderTable();
 }
 function setModalTab(t){ modalTab=t; renderModal(); }
@@ -722,7 +763,7 @@ function renderModal(){
 
   const emailsTab = e.giftOnly
     ? `<div style="font-size:13px;color:var(--muted)">No automated email for gift-only locations.</div>`
-    : emailSection(e);
+    : renderEmailBlocks(e, focusKey);
 
   const tabs = e.giftOnly ? "" : `<div class="m-tabs">
       <button class="${modalTab==='details'?'active':''}" onclick="setModalTab('details')">Details</button>

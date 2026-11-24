@@ -1,5 +1,5 @@
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { sendJob } from '../lib/sendJob.js';
+import { sendJob, sendPreviewEmail } from '../lib/sendJob.js';
 
 const KEY = 'schedule.json';
 
@@ -54,6 +54,34 @@ export default async function handler(req, res) {
       all[id] = job;
       await writeJSON(KEY, all);
       return res.status(200).json({ ok: true, id, status: job.sentAt ? 'sent' : 'confirmed', sentNow: sent });
+    } else if (action === 'editAndRepreview') {
+      // "Not approved -- need to edit": correct an already-scheduled job's text, then
+      // immediately send a fresh approval preview rather than waiting for the next
+      // daily cron run, so the fix actually gets re-reviewed and re-approved.
+      const job = all[id];
+      if (!job) return res.status(404).json({ error: 'No such reminder.' });
+      if (job.sentAt) return res.status(400).json({ error: 'Already sent.' });
+      if (!body.subject || !body.body) return res.status(400).json({ error: 'subject and body are required.' });
+      job.subject = body.subject;
+      job.body = body.body;
+      job.okToSend = false;
+      job.previewSentAt = null;
+      all[id] = job;
+      await writeJSON(KEY, all);
+      try {
+        const auds = await readJSON('audiences.json', {});
+        const rsvps = job.onlyNonResponders ? await readJSON('rsvps.json', {}) : {};
+        const origin = 'https://' + req.headers.host;
+        await sendPreviewEmail(job, id, { audiences: auds, rsvps, origin });
+        job.previewSentAt = new Date().toISOString();
+        all[id] = job;
+        await writeJSON(KEY, all);
+        return res.status(200).json({ ok: true, id, status: 'scheduled', previewSent: true });
+      } catch (e) {
+        // Saved either way; the daily cron will pick it up and send the preview since
+        // previewSentAt is still null.
+        return res.status(200).json({ ok: true, id, status: 'scheduled', previewSent: false, previewError: e.message });
+      }
     } else {
       return res.status(400).json({ error: 'Unknown action.' });
     }
