@@ -23,6 +23,17 @@
   body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5}
   a{color:var(--lagoon)}
   .hidden{display:none!important}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .nav{display:flex;gap:6px;align-items:center}
+  .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
+  .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
+  .navdrop{position:relative;display:inline-block}
+  .navdrop-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);min-width:170px;overflow:hidden;z-index:40}
+  .navdrop-menu.show{display:block}
+  .navdrop-menu a{display:block;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none}
+  .navdrop-menu a:hover{background:var(--vanilla)}
   h1,h2{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400}
   .btn{font-family:inherit;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
   .btn:hover{background:var(--parchment)}
@@ -42,9 +53,6 @@
   /* ===== shell: sidebar + main ===== */
   .layout{display:flex;min-height:100vh;align-items:stretch}
   .sidebar{width:220px;flex:none;background:var(--white);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 14px;gap:4px}
-  .sidebar-logo{padding:4px 10px 18px}
-  .sidebar-logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:18px;color:#141414;line-height:1.2}
-  .sidebar-logo .tag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px}
   .sidenav-item{display:flex;align-items:center;gap:9px;text-align:left;text-decoration:none;width:100%;font-family:inherit;font-size:14px;font-weight:700;border:none;background:none;color:var(--muted);padding:10px 12px;border-radius:10px;cursor:pointer;box-sizing:border-box}
   .sidenav-item:hover{background:var(--vanilla)}
   .sidenav-item.active{background:var(--midnight);color:#fff}
@@ -144,7 +152,7 @@
   @media(max-width:860px){
     .layout{flex-direction:column}
     .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:12px}
-    .sidebar-logo,.sidebar-foot{display:none}
+    .sidebar-foot{display:none}
     .main{padding:18px}
     .stats-bar{grid-template-columns:repeat(2,1fr)}
     .grid2{grid-template-columns:1fr}
@@ -162,11 +170,28 @@
   <div class="gate-err" id="gateErr"></div>
 </div>
 
+<header class="brand hidden" id="siteHeader">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="logo"><a href="./winter.html"><img src="/logo.svg" alt="Above &amp; Beyond ABA Therapy" style="height:40px;width:auto;display:block"></a></div>
+      <nav class="nav">
+        <a href="./winter.html">❄️ Winter Holiday Parties</a>
+        <a href="./admin.html" class="active">Admin</a>
+        <div class="navdrop">
+          <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:transparent;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
+          <div class="navdrop-menu" id="rsvpMenu">
+            <a href="./index.html">☀️ Summer '26</a>
+            <a href="./winter-rsvps.html">❄️ Winter '26/'27</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+<script>document.addEventListener("click",()=>{const m=document.getElementById("rsvpMenu");if(m)m.classList.remove("show");});</script>
+
 <div class="layout hidden" id="shell">
   <aside class="sidebar">
-    <div class="sidebar-logo"><a href="./winter.html"><img src="/logo.svg" alt="Above &amp; Beyond ABA Therapy" style="width:100%;max-width:170px;height:auto;display:block"></a><div class="tag">Admin</div></div>
-    <a class="sidenav-item" href="./winter.html">❄️ Winter Holiday Parties</a>
-    <div class="sidebar-sep"></div>
     <button class="sidenav-item active" id="nav-locations" onclick="setPanel('locations')">📍 Locations</button>
     <button class="sidenav-item" id="nav-wording" onclick="setPanel('wording')">✉️ Email Wording</button>
     <button class="sidenav-item hidden" id="nav-access" onclick="setPanel('access')">👤 Access</button>
@@ -217,6 +242,7 @@ let FILTER = "all";
 function enterApp(email){
   ADMIN_EMAIL=email;
   document.getElementById("gate").classList.add("hidden");
+  document.getElementById("siteHeader").classList.remove("hidden");
   document.getElementById("shell").classList.remove("hidden");
   if(email===OWNER_EMAIL) document.getElementById("nav-access").classList.remove("hidden");
   document.getElementById("whoami").innerHTML=`Signed in as<br><b>${esc(email)}</b><br><button class="lnk" onclick="signOut()">Sign out</button>`;
