@@ -15,11 +15,12 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px 16px}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5;min-height:100vh;padding:30px 16px}
+  .page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px)}
+  .toplogo{height:34px;width:auto;margin-bottom:16px}
   .card{background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 70px rgba(28,69,140,.2);max-width:460px;width:100%;overflow:hidden}
   .head{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;padding:26px 26px 22px}
-  .head .logo{font-family:'Fredoka','Inter',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
-  .head h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:26px;margin:8px 0 0}
+  .head h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:26px;margin:0}
   .body{padding:22px 26px 28px}
   .detail{font-size:14px;color:var(--muted);margin-bottom:4px}
   .detail b{color:var(--ink)}
@@ -30,7 +31,10 @@
 </style>
 </head>
 <body>
-<div class="card" id="card">Loading…</div>
+<div class="page">
+  <img class="toplogo" src="/logo.svg" alt="Above &amp; Beyond ABA Therapy">
+  <div class="card" id="card">Loading…</div>
+</div>
 
 <script>
 const eventId = new URLSearchParams(location.search).get("event") || "";
@@ -51,7 +55,7 @@ async function init(){
   const where=[ev.venue,ev.address].filter(Boolean).join(", ");
   const q=encodeURIComponent(eventId);
   card.innerHTML=`
-    <div class="head"><div class="logo">Above &amp; Beyond ABA</div><h1>🎄 ${esc(place)} Holiday Party</h1></div>
+    <div class="head"><h1>🎄 ${esc(place)} Holiday Party</h1></div>
     <div class="body">
       <div class="detail">📅 <b>${ev.date?esc(fmtLong(ev.date)):"Date coming soon"}</b></div>
       <div class="detail">🕕 <b>${esc(ev.time||"time coming soon")}</b></div>
