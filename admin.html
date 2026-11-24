@@ -776,7 +776,7 @@ function renderModal(){
       <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
     </div>`;
 
-  const fixBanner = focusKey ? `<div class="fix-banner">✏️ <b>You're here to fix this email.</b> Edit the subject and/or body below -- for example, if emojis or special characters showed up wrong in the email you got, just delete and retype that part. When it looks right, click <b>"Save &amp; re-send for approval"</b> and a fresh approval email will go out automatically.<br><br>Not sure how to fix it, or it's not something you can edit (like a display problem)? Click <b>"🚩 Flag for Liba"</b> instead and she'll take care of it.</div>` : "";
+  const fixBanner = focusKey ? `<div class="fix-banner">✏️ <b>You're here to fix this email.</b> Edit the subject and/or body below -- for example, if emojis or special characters showed up wrong in the email you got, just delete and retype that part. When it looks right, click <b>"💾 Save &amp; Approve to Send"</b> and a fresh approval email will go out automatically.<br><br>Not sure how to fix it, or it's not something you can edit (like a display problem)? Click <b>"🚩 Flag for Liba"</b> instead and she'll take care of it.</div>` : "";
   const emailsTab = e.giftOnly
     ? `<div style="font-size:13px;color:var(--muted)">No automated email for gift-only locations.</div>`
     : fixBanner + renderEmailBlocks(e, focusKey);
