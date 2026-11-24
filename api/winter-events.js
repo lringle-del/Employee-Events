@@ -22,7 +22,7 @@ const SEED = {
   'w-maryland': { id: 'w-maryland', state: 'Maryland', city: '', label: 'Maryland', venue: null, address: null, url: null, date: null, time: null, startISO: null, endISO: null, est: null, giftOnly: true, budgetGroup: null, budgetAllotted: null, budgetSpent: 0 },
 };
 
-const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'date', 'time', 'startISO', 'endISO', 'est', 'giftOnly', 'budgetGroup', 'budgetAllotted', 'budgetSpent', 'notes', 'plBcc', 'flyerUrl'];
+const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'date', 'time', 'startISO', 'endISO', 'est', 'giftOnly', 'budgetGroup', 'budgetAllotted', 'budgetSpent', 'notes', 'plBcc', 'flyerUrl', 'extraBcc'];
 
 /**
  * Winter event metadata store — replaces the hardcoded-array pattern used for

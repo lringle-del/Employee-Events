@@ -2,8 +2,11 @@ import { Resend } from 'resend';
 import { readJSON, writeJSON } from '../lib/blobstore.js';
 import { sendJob, tokenFor, audienceKey, pendingOnly } from '../lib/sendJob.js';
 
-const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json';
-const DIGEST_TO = 'lringle@abtaba.com';
+const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json', WKEY = 'winterEvents.json';
+const SUMMER_DIGEST_TO = 'lringle@abtaba.com';
+const WINTER_DIGEST_TO = 'amarkovich@abtaba.com';
+const isWinter = (j) => !!(j && j.eventId && j.eventId.startsWith('w-'));
+const digestFor = (j) => (isWinter(j) ? WINTER_DIGEST_TO : SUMMER_DIGEST_TO);
 const dayBefore = (iso) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 1); return d.toISOString().slice(0, 10); };
 const escH = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
@@ -45,7 +48,7 @@ export default async function handler(req, res) {
       if (dry) { previews.push({ id, to: who, sendOn: j.sendOn }); continue; }
       try {
         await resend.emails.send({
-          from, to: [DIGEST_TO], replyTo: 'events@abtaba.com',
+          from, to: [digestFor(j)], replyTo: 'events@abtaba.com',
           subject: `Approve to send — ${j.subject}  (sends ${j.sendOn})`,
           text: `This reminder is scheduled to send on ${j.sendOn} to ${who}.\n\n`
             + `TO APPROVE, tap this link:\n${link}\n\n`
@@ -72,20 +75,58 @@ export default async function handler(req, res) {
       try {
         const r = await sendJob(j, { directors: dirs, audiences: auds });
         j.sentAt = new Date().toISOString(); j.sentCount = r.sent; sched[id] = j; await writeJSON(SKEY, sched);
-        sends.push({ id, sent: r.sent });
-      } catch (e) { sends.push({ id, error: e.message }); }
+        sends.push({ id, sent: r.sent, to: digestFor(j) });
+      } catch (e) { sends.push({ id, error: e.message, to: digestFor(j) }); }
     }
   }
 
-  if (!dry && sends.filter((s) => s.sent).length) {
-    try {
-      await resend.emails.send({
-        from, to: [DIGEST_TO], subject: `Reminders sent — ${today}`,
-        text: 'Sent today:\n' + sends.filter((s) => s.sent).map((s) => `- ${s.id}: ${s.sent}`).join('\n')
-          + (sends.some((s) => s.error) ? '\n\nErrors:\n' + sends.filter((s) => s.error).map((s) => `- ${s.id}: ${s.error}`).join('\n') : ''),
-      });
-    } catch { /* best effort */ }
+  if (!dry) {
+    for (const to of [SUMMER_DIGEST_TO, WINTER_DIGEST_TO]) {
+      const mine = sends.filter((s) => s.to === to);
+      if (!mine.filter((s) => s.sent).length) continue;
+      try {
+        await resend.emails.send({
+          from, to: [to], subject: `Reminders sent — ${today}`,
+          text: 'Sent today:\n' + mine.filter((s) => s.sent).map((s) => `- ${s.id}: ${s.sent}`).join('\n')
+            + (mine.some((s) => s.error) ? '\n\nErrors:\n' + mine.filter((s) => s.error).map((s) => `- ${s.id}: ${s.error}`).join('\n') : ''),
+        });
+      } catch { /* best effort */ }
+    }
   }
 
-  return res.status(200).json({ ran: today, dryRun: dry, previews, sends });
+  // Daily "what needs attention" digest for the winter admin (amarkovich). Can only
+  // report on jobs that already exist in schedule.json -- an email nobody has ever
+  // clicked "Approve & schedule" on isn't stored anywhere until that first click, so
+  // this won't invent reminders that haven't been touched yet.
+  let digest = null;
+  try {
+    const events = await readJSON(WKEY, {});
+    const noDate = [], noRoster = [], needsApproval = [];
+    for (const id in events) {
+      const e = events[id];
+      if (!e.giftOnly && !e.date) noDate.push(e.city || e.state);
+      const roster = auds['Winter ' + e.label] || [];
+      if (!roster.length) noRoster.push(e.city || e.state);
+    }
+    for (const id in sched) {
+      const j = sched[id];
+      if (!isWinter(j) || !j.sendOn || j.sentAt || j.status === 'skipped') continue;
+      if (j.okToSend) continue; // already released, nothing to do
+      const days = Math.round((Date.parse(j.sendOn) - Date.parse(today)) / 86400000);
+      if (days <= 7) needsApproval.push(`${j.label} — ${j.subject} (sends ${j.sendOn}${days < 0 ? ', OVERDUE' : ''})`);
+    }
+    if (noDate.length || noRoster.length || needsApproval.length) {
+      const section = (title, items) => items.length ? `${title} (${items.length}):\n` + items.map((x) => `- ${x}`).join('\n') + '\n\n' : '';
+      digest = section('Needs a date', noDate) + section('Needs an employee list uploaded', noRoster) + section('Needs your approval', needsApproval);
+      if (!dry) {
+        await resend.emails.send({
+          from, to: [WINTER_DIGEST_TO], replyTo: 'events@abtaba.com',
+          subject: `Winter Holiday Parties — today's to-do (${today})`,
+          text: digest + 'Open the Admin page to fill in details, or the main dashboard to approve: ' + origin + '/admin.html',
+        });
+      }
+    }
+  } catch { /* best effort -- never block the actual sends over the digest */ }
+
+  return res.status(200).json({ ran: today, dryRun: dry, previews, sends, digest });
 }

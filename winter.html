@@ -183,6 +183,7 @@
       <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Winter Holiday Parties</div></div>
       <nav class="nav">
         <a href="./winter.html" class="active">❄️ Winter Holiday Parties</a>
+        <a href="./admin.html">Admin</a>
         <a href="./events.html">Event Command Center</a>
         <div class="navdrop">
           <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:transparent;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
@@ -405,14 +406,21 @@ function buildJob(e,r){
   if(t.fromName) job.fromName=t.fromName;
   if(t.flyerUrl) job.flyerUrl=t.flyerUrl;
   if(r.onlyNonResponders) job.onlyNonResponders=true; // the server leaves out anyone who has already RSVP'd
+  const extraBcc=(e.extraBcc&&e.extraBcc.length)?e.extraBcc.slice():[];
   if(r.kind==="pl"){
     job.plEmail=getPL(e.id).email;
     const dir=getDirector(e.id);
     const bcc=(e.plBcc&&e.plBcc.length)?e.plBcc.slice():[];
     if(dir) bcc.push(dir);
+    bcc.push(...extraBcc);
     if(bcc.length) job.bcc=bcc;
   }
-  if(r.kind==="att" && (r.key==="att3"||r.key==="att0")){ const dir=getDirector(e.id); if(dir) job.dirBcc=[dir]; }
+  if(r.kind==="att"){
+    const dir=(r.key==="att3"||r.key==="att0")?getDirector(e.id):"";
+    const dirBcc=dir?[dir]:[];
+    dirBcc.push(...extraBcc);
+    if(dirBcc.length) job.dirBcc=dirBcc;
+  }
   return job;
 }
 async function approve(key){

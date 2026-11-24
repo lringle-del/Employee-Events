@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · Winter Holiday Parties · Above &amp; Beyond ABA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/lib/dashboard-shared.js"></script>
+<style>
+  :root{
+    --vanilla:#f5f0e5; --biscuit:#e8dbc4; --parchment:#ebd1ab;
+    --frost:#2f8fc9; --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
+    --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff;
+    --green:#2f9e6f; --amber:#c98a1a;
+    --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5}
+  a{color:var(--lagoon)}
+  .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+  header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:24px;color:#141414}
+  .logo .tag{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#141414;font-weight:600;margin-top:2px}
+  .nav{display:flex;gap:6px}
+  .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
+  .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
+  h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:32px;margin:20px 0 4px}
+  .sub{color:var(--muted);font-size:14px;max-width:640px}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:16px 0;padding:18px 22px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .card-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:22px;flex:1}
+  .badge{font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:999px}
+  .badge.confirmed{background:#dcf2e6;color:#1f7a56}
+  .badge.tbd{background:#fdeccd;color:#9a6b12}
+  .badge.gift{background:#ffe6c9;color:#9a5a12}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:12px}
+  .grid.full{grid-template-columns:1fr}
+  .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .f input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
+  .row-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--parchment);margin-top:6px}
+  .row-upload .info{font-size:13px;font-weight:600;flex:1}
+  .btn{font-family:inherit;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
+  .btn:hover{background:var(--parchment)}
+  .flyer-thumb{height:44px;border-radius:7px;border:1px solid var(--line)}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
+  .toast.show{display:block}
+  footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px}
+  @media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="brand">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Admin</div></div>
+      <nav class="nav">
+        <a href="./winter.html">❄️ Winter Holiday Parties</a>
+        <a href="./admin.html" class="active">Admin</a>
+        <a href="./events.html">Event Command Center</a>
+      </nav>
+    </div>
+    <h1>Admin</h1>
+    <div class="sub">Fill in the date, time, venue, and website for each party, upload the employee list and flyer, and add anyone you want BCC'd. Everything here feeds straight into the emails. Approving and sending still happens on the <a href="./winter.html">main dashboard</a>.</div>
+  </div>
+</header>
+<div class="wrap" id="app">Loading…</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
+<input type="file" id="flyerFile" accept="image/jpeg,image/png" style="display:none">
+<footer>Above &amp; Beyond ABA · Winter Holiday Parties Admin</footer>
+
+<script>
+let EVENTS=[], AUD_COUNTS={};
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),6000);}
+
+async function load(){
+  const [evR,auR]=await Promise.all([
+    fetch("/api/winter-events",{cache:"no-store"}).then(r=>r.json()).catch(()=>({events:[]})),
+    fetch("/api/audience",{cache:"no-store"}).then(r=>r.json()).catch(()=>({counts:{}})),
+  ]);
+  EVENTS=evR.events||[];
+  AUD_COUNTS=auR.counts||{};
+  render();
+}
+function audienceCount(label){ const key="Winter "+label; return Object.prototype.hasOwnProperty.call(AUD_COUNTS,key)?AUD_COUNTS[key]:null; }
+
+async function patchEvent(id, fields){
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id,...fields})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ const i=EVENTS.findIndex(x=>x.id===id); if(i>=0) EVENTS[i]=j.event; return true; }
+    if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+  return false;
+}
+function fmtClock(hm){ if(!hm) return ""; const [h,m]=hm.split(":").map(Number); const ap=h>=12?"PM":"AM"; let hh=h%12; if(hh===0) hh=12; return hh+":"+String(m).padStart(2,"0")+" "+ap; }
+async function saveDateTime(id){
+  const date=document.getElementById("edate:"+id).value||null;
+  const st=document.getElementById("etstart:"+id).value, et=document.getElementById("etend:"+id).value;
+  const time=(st&&et)?(fmtClock(st)+"–"+fmtClock(et)):(st?fmtClock(st):null);
+  const startISO=(date&&st)?date+"T"+st+":00":null;
+  const endISO=(date&&et)?date+"T"+et+":00":null;
+  if(await patchEvent(id,{date,time,startISO,endISO})){ render(); toast("Saved ✓"); }
+}
+async function saveTextField(id,field){
+  const val=document.getElementById("e"+field+":"+id).value.trim();
+  if(await patchEvent(id,{[field]:val})) toast("Saved ✓");
+}
+async function saveBcc(id){
+  const raw=document.getElementById("ebcc:"+id).value;
+  const list=raw.split(",").map(s=>s.trim()).filter(Boolean);
+  if(await patchEvent(id,{extraBcc:list})) toast("Saved ✓");
+}
+
+function extractEmailsFromWorkbook(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
+  const out=new Set(); const rx=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  if(!rows.length) return [];
+  const header=rows[0].map(h=>String(h).toLowerCase().trim());
+  let emailCol=header.indexOf("email");
+  if(emailCol<0) emailCol=header.findIndex(h=>h.includes("email")&&!h.includes("additional")&&!h.includes("guardian"));
+  if(emailCol<0){ rows.forEach(r=>r.forEach(c=>{const v=String(c).trim(); if(rx.test(v))out.add(v);})); return [...out]; }
+  for(let i=1;i<rows.length;i++){ const em=String(rows[i][emailCol]||"").trim(); if(rx.test(em)) out.add(em); }
+  return [...out];
+}
+function uploadList(eventId){
+  const e=EVENTS.find(x=>x.id===eventId);
+  const inp=document.getElementById("listFile");
+  inp.value="";
+  inp.onchange=async()=>{
+    const file=inp.files[0]; if(!file) return;
+    toast("Reading "+file.name+"…");
+    let emails;
+    try{ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); emails=extractEmailsFromWorkbook(wb); }
+    catch(err){ toast("Couldn't read that file ("+err.message+")."); return; }
+    if(!emails.length){ toast("No email addresses found in that file."); return; }
+    if(!confirm(`Save ${emails.length} emails as the ${e.city||e.state} winter roster?`)) return;
+    const pass=getSendPass(); if(!pass){ toast("Passcode needed to save the list."); return; }
+    toast("Saving "+emails.length+" emails…");
+    try{
+      const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
+      const j=await res.json().catch(()=>({}));
+      if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); render(); }
+      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else toast("Save failed: "+(j.error||("HTTP "+res.status)));
+    }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+  };
+  inp.click();
+}
+function uploadFlyer(eventId){
+  const inp=document.getElementById("flyerFile");
+  inp.value="";
+  inp.onchange=async()=>{
+    const file=inp.files[0]; if(!file) return;
+    toast("Processing "+file.name+"…");
+    try{
+      const url=URL.createObjectURL(file);
+      const img=new Image();
+      await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+      const maxW=700;
+      const scale=Math.min(1,maxW/img.width);
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+      URL.revokeObjectURL(url);
+      const base64=canvas.toDataURL("image/jpeg",0.78).split(",")[1];
+      const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+      toast("Uploading flyer…");
+      const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
+      const j=await res.json().catch(()=>({}));
+      if(res.ok){ const i=EVENTS.findIndex(x=>x.id===eventId); if(i>=0) EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); render(); }
+      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
+    }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
+  };
+  inp.click();
+}
+
+function render(){
+  const sorted=EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
+  document.getElementById("app").innerHTML=sorted.map(e=>{
+    const place=e.city||e.state;
+    const badge = e.giftOnly ? `<span class="badge gift">Gift only — no party</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
+    const ac=audienceCount(e.label);
+    const rosterInfo = ac!=null ? `<b>${ac}</b> emails uploaded` : "No list uploaded yet";
+    const flyerInfo = e.flyerUrl ? `<img src="${esc(e.flyerUrl)}" class="flyer-thumb">` : "No flyer uploaded yet";
+    return `<div class="card">
+      <div class="card-head">
+        <div class="card-title">${esc(place)}</div>
+        ${badge}
+      </div>
+      ${e.giftOnly ? "" : `<div class="grid">
+        <div class="f"><label>Date</label><input type="date" id="edate:${e.id}" value="${e.date||""}" onchange="saveDateTime('${e.id}')"></div>
+        <div class="f"><label>Start / End time</label><div style="display:flex;gap:6px">
+          <input type="time" id="etstart:${e.id}" value="${e.startISO?e.startISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
+          <input type="time" id="etend:${e.id}" value="${e.endISO?e.endISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
+        </div></div>
+        <div class="f"><label>Venue</label><input id="evenue:${e.id}" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('${e.id}','venue')"></div>
+        <div class="f"><label>Address</label><input id="eaddress:${e.id}" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('${e.id}','address')"></div>
+        <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
+      </div>`}
+      <div class="grid full">
+        <div class="f"><label>BCC (comma-separated emails, optional)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
+      </div>
+      <div class="row-upload">
+        <div class="info">📋 ${rosterInfo}</div>
+        <button class="btn" onclick="uploadList('${e.id}')">⬆ Upload list</button>
+      </div>
+      <div class="row-upload">
+        <div class="info" style="display:flex;align-items:center;gap:10px">🖼️ ${flyerInfo}</div>
+        <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+load();
+</script>
+</body>
+</html>
