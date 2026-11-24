@@ -570,7 +570,7 @@ async function approve(key){
   const sub=document.getElementById("subj:"+key).value;
   if(!confirm(`Approve & schedule this email?\n\n"${sub}"\n\nIt will send AUTOMATICALLY on ${fmtShort(r.date)} to ${who}. No further action needed.`)) return;
   toast("Scheduling…");
-  if(await scheduleAction(openId+":"+key,"approve",buildJob(e,r))){
+  if(await scheduleAction(openId+":"+key,"approve",buildJob(e,r),true)){
     openModal(openId); refreshAll();
     toast("Scheduled ✓ — you'll get a preview to approve the day before it sends ("+fmtShort(r.date)+").");
   }
@@ -581,7 +581,7 @@ async function confirmSend(key){
   const who = r.kind==="pl"?getPL(openId).email:(cnt+" recipients ("+e.label+")");
   const dueNow = dbetween(r.date,T0)<=0;
   if(!confirm(`Approve "${document.getElementById("subj:"+key).value}"\n\nTo: ${who}\n${dueNow?"It's due today — this will SEND now.":"It will send on "+fmtShort(r.date)+" (nothing goes out before then)."}\n\nProceed?`)) return;
-  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  const pass=getSendPass(true); if(!pass){ toast("Passcode needed."); return; }
   toast("Approving…");
   try{
     const res=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:openId+":"+key,action:"confirm"})});

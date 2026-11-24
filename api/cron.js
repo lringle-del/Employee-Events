@@ -27,7 +27,9 @@ export default async function handler(req, res) {
   const apiKey = process.env.RESEND_API_KEY, rawFrom = process.env.RESEND_FROM;
   if (!apiKey || !rawFrom) return res.status(501).json({ error: 'Resend not configured.' });
   // Always show "Above and Beyond ABA" as the sender name, never a bare address.
-  const from = `Above and Beyond ABA <${(rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom}>`;
+  const fromAddr = (rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom;
+  const from = `Above and Beyond ABA <${fromAddr}>`;
+  const replyDomain = fromAddr.split('@')[1] || 'updates.abtaba.com';
   const resend = new Resend(apiKey);
   const origin = 'https://' + req.headers.host;
 
@@ -46,19 +48,23 @@ export default async function handler(req, res) {
     if (!j.okToSend && !j.previewSentAt && today >= dayBefore(j.sendOn)) {
       const count = j.kind === 'pl' ? 1 : pendingOnly(j, auds[audienceKey(j)] || [], rsvps).length;
       const who = j.kind === 'pl' ? (j.plEmail || '(no PL email)') : (count + ' attendees' + (j.onlyNonResponders ? " who haven't responded yet" : '') + ' (' + j.label + ')');
-      const link = origin + '/api/approve-send?id=' + encodeURIComponent(id) + '&t=' + tokenFor(id);
+      const token = tokenFor(id);
+      const link = origin + '/api/approve-send?id=' + encodeURIComponent(id) + '&t=' + token;
+      const replyTo = `approve.${id.replace(':', '.')}.${token}@${replyDomain}`;
       if (dry) { previews.push({ id, to: who, sendOn: j.sendOn }); continue; }
       try {
         await resend.emails.send({
-          from, to: [digestFor(j)], replyTo: 'events@abtaba.com',
+          from, to: [digestFor(j)], replyTo,
           subject: `Approve to send — ${j.subject}  (sends ${j.sendOn})`,
           text: `This reminder is scheduled to send on ${j.sendOn} to ${who}.\n\n`
-            + `TO APPROVE, tap this link:\n${link}\n\n`
+            + `TO APPROVE, either tap this link:\n${link}\n\n`
+            + `...or just reply to this email with the word "Approved".\n\n`
             + `If you do nothing, it will NOT send.\n\n`
             + `----- EMAIL PREVIEW -----\nSubject: ${j.subject}\n\n${j.body}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:580px;color:#1c458c">`
             + `<p style="font-size:15px;color:#333">This reminder is scheduled to send on <b>${escH(j.sendOn)}</b> to <b>${escH(who)}</b>. Review it below, then approve to release it.</p>`
             + `<p style="margin:22px 0"><a href="${link}" style="display:inline-block;background:#2f9e6f;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:17px">✅ Approve &amp; send</a></p>`
+            + `<p style="color:#333;font-size:14px">...or just <b>reply to this email with the word "Approved"</b>.</p>`
             + `<p style="color:#888;font-size:13px">If you don't approve, this reminder will <b>not</b> be sent.</p>`
             + `<hr style="border:none;border-top:1px solid #e3d6bd;margin:20px 0">`
             + `<p style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5f6b7a;font-weight:700">Preview</p>`

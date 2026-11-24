@@ -3,15 +3,21 @@ import { sendJob, tokenFor } from '../lib/sendJob.js';
 import { Resend } from 'resend';
 
 const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json';
-const APPROVER = 'lringle@abtaba.com';
+// Who's allowed to approve by replying -- matches cron.js's digestFor(): each
+// job's preview email goes to one of these two people, and only that same
+// person's reply can approve it. A winter job (id starts "w-") belongs to
+// Andrew; everything else belongs to Liba.
+const SUMMER_APPROVER = 'lringle@abtaba.com';
+const WINTER_APPROVER = 'amarkovich@abtaba.com';
+const approverFor = (eventId) => (eventId && eventId.startsWith('w-') ? WINTER_APPROVER : SUMMER_APPROVER);
 const FORWARD_TO = 'events@abtaba.com';
 
 /**
  * Resend inbound webhook (email.received). The preview email's Reply-To is a
  * per-reminder address: approve.<eventId>.<key>.<token>@updates.abtaba.com.
- * When Liba replies, Resend posts here; we parse the address, verify the token
- * (HMAC of the job id, so it can't be forged) and that it came from Liba, then
- * approve + send that reminder.
+ * When the preview's recipient replies, Resend posts here; we parse the
+ * address, verify the token (HMAC of the job id, so it can't be forged) and
+ * that it came from that job's approver, then approve + send that reminder.
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method not allowed.' }); }
@@ -50,7 +56,12 @@ export default async function handler(req, res) {
   const id = eventId + ':' + key;
 
   if (token !== tokenFor(id)) return res.status(200).json({ ignored: 'bad token' });
-  if (fromRaw && !fromRaw.toLowerCase().includes(APPROVER)) return res.status(200).json({ ignored: 'not from approver' });
+  if (fromRaw && !fromRaw.toLowerCase().includes(approverFor(eventId))) return res.status(200).json({ ignored: 'not from approver' });
+
+  // Require the actual word "approved" in the reply -- a stray "ok" or "thanks" (or
+  // any other reply to that thread) must never trigger a real send.
+  const replyText = (data.text || data.body || data['stripped-text'] || '').toLowerCase();
+  if (!replyText.includes('approved')) return res.status(200).json({ ignored: 'reply did not say approved' });
 
   const all = await readJSON(SKEY, {});
   const job = all[id];
