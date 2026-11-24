@@ -1,5 +1,5 @@
 import { readJSON, writeJSON } from '../lib/blobstore.js';
-import { sendJob, tokenFor, audienceKey, pendingOnly } from '../lib/sendJob.js';
+import { sendJob, tokenFor, audienceKey, pendingOnly, toHtml } from '../lib/sendJob.js';
 
 const SKEY = 'schedule.json', AKEY = 'audiences.json', DKEY = 'directors.json';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   return res.status(200).send(page('Approve this reminder?',
     `<p><b>${esc(job.subject)}</b></p>` +
     `<p style="color:#5f6b7a">To: ${esc(who)}<br>Scheduled to send: <b>${esc(job.sendOn)}</b></p>` +
-    `<pre style="white-space:pre-wrap;background:#f5f0e5;padding:14px;border-radius:10px;font-family:inherit;font-size:14px">${esc(job.body)}</pre>` +
+    `<div style="background:#f5f0e5;padding:14px;border-radius:10px">${toHtml(job.body)}</div>` +
     `<form method="POST" action="/api/approve-send?id=${encodeURIComponent(id)}&t=${t}">` +
     `<button type="submit" style="background:#2f9e6f;color:#fff;border:none;padding:13px 24px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">✅ Approve &amp; send</button></form>` +
     `<p style="color:#888;font-size:13px;margin-top:16px">If you don't approve, this reminder will not be sent.</p>`));
