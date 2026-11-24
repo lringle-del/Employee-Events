@@ -1,7 +1,27 @@
+import { Resend } from 'resend';
 import { readJSON, writeJSON } from '../lib/blobstore.js';
 import { sendJob, sendPreviewEmail } from '../lib/sendJob.js';
 
 const KEY = 'schedule.json';
+
+// After a real "Approve & send" fires, email whoever approved it a copy/confirmation
+// of exactly what happened -- otherwise clicking the button gives no feedback at all
+// when (as with a test location) there happen to be zero real recipients.
+async function sendConfirmationCopy(to, job, { sent, error }) {
+  if (!to) return;
+  try {
+    const apiKey = process.env.RESEND_API_KEY, rawFrom = process.env.RESEND_FROM;
+    if (!apiKey || !rawFrom) return;
+    const fromAddr = (rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom;
+    const from = `Above and Beyond ABA <${fromAddr}>`;
+    const status = error ? `Send failed: ${error}` : `Sent to ${sent} recipient(s).`;
+    await new Resend(apiKey).emails.send({
+      from, to: [to],
+      subject: `✓ ${error ? 'Send failed' : 'Sent'}: ${job.subject}`,
+      text: `${status}\n\n----- WHAT WENT OUT -----\nSubject: ${job.subject}\n\n${job.body}`,
+    });
+  } catch { /* best effort -- never block the real send over this confirmation */ }
+}
 
 /**
  * Approval store for reminders. Each job is keyed "<eventId>:<reminderKey>".
@@ -49,7 +69,11 @@ export default async function handler(req, res) {
           const auds = await readJSON('audiences.json', {}), dirs = await readJSON('directors.json', {});
           const r = await sendJob(job, { directors: dirs, audiences: auds });
           job.sentAt = new Date().toISOString(); job.sentCount = r.sent; sent = true;
-        } catch (e) { /* keep okToSend; the daily job will retry */ }
+          await sendConfirmationCopy(body.approverEmail, job, { sent: r.sent });
+        } catch (e) {
+          await sendConfirmationCopy(body.approverEmail, job, { error: e.message });
+          /* keep okToSend; the daily job will retry */
+        }
       }
       all[id] = job;
       await writeJSON(KEY, all);
