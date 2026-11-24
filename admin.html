@@ -22,48 +22,96 @@
   html,body{margin:0;padding:0}
   body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5}
   a{color:var(--lagoon)}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
-  header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
-  .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-  .logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:24px;color:#141414}
-  .logo .tag{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#141414;font-weight:600;margin-top:2px}
-  .nav{display:flex;gap:6px}
-  .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
-  .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
-  h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:32px;margin:20px 0 4px}
-  .sub{color:var(--muted);font-size:14px;max-width:680px}
-
-  .grid-cards{margin:18px 0}
-  .mini{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin:0 0 16px}
-  .mini-head{padding:18px 22px 10px;display:flex;flex-direction:column;gap:9px}
-  .mini-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:22px;display:flex;align-items:center;gap:8px}
-  .collapse-btn{background:none;border:none;margin-left:auto;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;font-family:inherit;padding:4px 8px;border-radius:8px}
-  .collapse-btn:hover{background:var(--vanilla);color:var(--ink)}
-  .collapse-btn .chev{font-size:11px;transition:transform .15s}
-  .mini.collapsed .collapse-btn .chev{transform:rotate(-90deg)}
-  .badges{display:flex;gap:6px;flex-wrap:wrap}
-  .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
-  .badge.confirmed{background:#dcf2e6;color:#1f7a56}
-  .badge.tbd{background:#fdeccd;color:#9a6b12}
-  .badge.gift{background:#ffe6c9;color:#9a5a12}
-  .badge.needs{background:var(--clay);color:#fff}
-  .badge.noroster{background:#fdeccd;color:#9a6b12}
-
-  .acc-body{border-top:1px solid var(--parchment);padding:16px 22px 20px}
-  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:12px}
-  .grid2.full{grid-template-columns:1fr}
-  .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
-  .f input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
-  .row-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--parchment);margin-top:6px}
-  .row-upload .info{font-size:13px;font-weight:600;flex:1;display:flex;align-items:center;gap:8px}
-  .flyer-thumb{height:40px;border-radius:7px;border:1px solid var(--line)}
+  .hidden{display:none!important}
+  h1,h2{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400}
   .btn{font-family:inherit;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
   .btn:hover{background:var(--parchment)}
   .btn.primary{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;border:none}
   .btn.ghost{background:var(--white);color:var(--ink);border:1px solid var(--line)}
   .lnk{background:none;border:none;color:var(--lagoon);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:0}
 
-  .emails-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:14px 0 6px}
+  /* ===== sign-in gate ===== */
+  .gate-box{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 26px;max-width:380px;margin:60px auto}
+  .gate-box h2{margin:0 0 6px}
+  .gate-box .f{margin-bottom:14px}
+  .gate-box .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:4px}
+  .gate-box .f input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
+  .gate-err{color:var(--clay);font-size:13px;margin-top:10px}
+  .sub{color:var(--muted);font-size:14px}
+
+  /* ===== shell: sidebar + main ===== */
+  .layout{display:flex;min-height:100vh;align-items:stretch}
+  .sidebar{width:220px;flex:none;background:var(--white);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 14px;gap:4px}
+  .sidebar-logo{padding:4px 10px 18px}
+  .sidebar-logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:18px;color:#141414;line-height:1.2}
+  .sidebar-logo .tag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px}
+  .sidenav-item{display:flex;align-items:center;gap:9px;text-align:left;width:100%;font-family:inherit;font-size:14px;font-weight:700;border:none;background:none;color:var(--muted);padding:10px 12px;border-radius:10px;cursor:pointer}
+  .sidenav-item:hover{background:var(--vanilla)}
+  .sidenav-item.active{background:var(--midnight);color:#fff}
+  .sidenav-item .count{margin-left:auto;background:var(--clay);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px}
+  .sidenav-item.active .count{background:rgba(255,255,255,.25)}
+  .sidebar-sep{height:1px;background:var(--line);margin:12px 4px}
+  .sidebar-foot{margin-top:auto;padding:10px;font-size:12.5px;color:var(--muted)}
+  .sidebar-foot a{display:block;margin-top:8px;font-weight:700;text-decoration:none;font-size:13px}
+  .main{flex:1;min-width:0;padding:26px 30px 60px}
+  .main-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .main-head h1{font-size:28px;margin:0}
+
+  /* ===== stats bar ===== */
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  .tile{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}
+  .tile .v{font-family:'Libre Caslon Display',Georgia,serif;font-size:28px;margin-top:4px}
+  .tile.accent{background:linear-gradient(135deg,#ffb254,var(--clay));border:none}
+  .tile.accent .k{color:#ffe9d8}
+  .tile.accent .v{color:#fff}
+
+  /* ===== toolbar / filters ===== */
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .toolbar input[type=search]{font-family:inherit;font-size:13.5px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--white);min-width:220px;box-shadow:var(--shadow)}
+  .filter-tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .filter-tab{font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--white);color:var(--muted);padding:7px 13px;border-radius:999px;cursor:pointer}
+  .filter-tab.active{background:var(--midnight);border-color:var(--midnight);color:#fff}
+
+  /* ===== location table ===== */
+  .loc-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .loc-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;padding:11px 16px;border-bottom:2px solid var(--parchment);background:#faf6ee}
+  .loc-table td{padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+  .loc-table tr:last-child td{border-bottom:none}
+  .loc-row{cursor:pointer}
+  .loc-row:hover td{background:#fffdf8}
+  .loc-name{font-weight:700;font-size:15px}
+  .loc-sub{font-size:12px;color:var(--muted)}
+  .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;display:inline-block}
+  .badge.confirmed{background:#dcf2e6;color:#1f7a56}
+  .badge.tbd{background:#fdeccd;color:#9a6b12}
+  .badge.gift{background:#ffe6c9;color:#9a5a12}
+  .badge.needs{background:var(--clay);color:#fff}
+  .badge.noroster{background:#fdeccd;color:#9a6b12}
+  .badge.sent{background:var(--green);color:#fff}
+  .chev-cell{color:var(--muted);text-align:right}
+  .empty{padding:30px;text-align:center;color:var(--muted);background:var(--white);border:1px solid var(--line);border-radius:14px}
+
+  /* ===== modal (location detail) ===== */
+  .backdrop{position:fixed;inset:0;background:rgba(28,69,140,.34);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;z-index:50;overflow:auto}
+  .backdrop.show{display:flex}
+  .modal{background:var(--vanilla);border-radius:18px;max-width:780px;width:100%;box-shadow:0 24px 70px rgba(28,69,140,.35);overflow:hidden}
+  .m-head{background:linear-gradient(135deg,var(--frost),var(--lagoon));color:#fff;padding:20px 24px 0;position:relative}
+  .m-head .x{position:absolute;top:14px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:9px;font-size:18px;cursor:pointer}
+  .m-head h2{color:#fff;font-size:26px;margin:0}
+  .m-tabs{display:flex;gap:4px;margin-top:16px}
+  .m-tabs button{font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:rgba(255,255,255,.14);color:#dcecfb;padding:9px 16px;border-radius:9px 9px 0 0;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .m-tabs button.active{background:var(--vanilla);color:var(--ink)}
+  .tab-badge{background:var(--clay);color:#fff;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px}
+  .m-body{padding:22px 24px 26px;max-height:70vh;overflow:auto}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:14px}
+  .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .f input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
+  .row-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--parchment);margin-top:6px}
+  .row-upload .info{font-size:13px;font-weight:600;flex:1;display:flex;align-items:center;gap:8px}
+  .flyer-thumb{height:40px;border-radius:7px;border:1px solid var(--line)}
+
+  /* ===== email cards (reused in modal + templates box) ===== */
   .em{background:#fffdf8;border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
   .em-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--parchment);flex-wrap:wrap}
   .em-h .dot{width:9px;height:9px;border-radius:50%}
@@ -84,39 +132,28 @@
   .em-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
   .foot-note{font-size:11.5px;color:var(--muted);margin-left:auto}
 
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
-  .toast.show{display:block}
-  footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px}
-  .hidden{display:none!important}
-  .gate-box{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 26px;max-width:380px;margin:60px auto}
-  .gate-box h2{font-family:'Libre Caslon Display',Georgia,serif;margin:0 0 6px}
-  .gate-box .f{margin-bottom:14px}
-  .gate-box .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:4px}
-  .gate-box .f input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
-  .gate-err{color:var(--clay);font-size:13px;margin-top:10px}
-  .access-box{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 20px;margin:18px 0}
+  /* ===== access box (owner-only) ===== */
+  .access-box{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 20px;margin:0 0 18px}
   .access-box .al{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:8px}
   .access-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13.5px}
   .access-row .lnk{color:var(--clay)}
-  @media(max-width:700px){.grid2{grid-template-columns:1fr}}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
+  .toast.show{display:block}
+
+  @media(max-width:860px){
+    .layout{flex-direction:column}
+    .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:12px}
+    .sidebar-logo,.sidebar-foot{display:none}
+    .main{padding:18px}
+    .stats-bar{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
-<header class="brand">
-  <div class="wrap">
-    <div class="brand-row">
-      <div class="logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Admin</div></div>
-      <nav class="nav">
-        <a href="./winter.html">❄️ Winter Holiday Parties</a>
-        <a href="./admin.html" class="active">Admin</a>
-        <span id="whoami" class="hidden" style="font-size:13px;color:var(--muted);align-self:center;padding:0 4px"></span>
-      </nav>
-    </div>
-    <h1>Admin</h1>
-    <div class="sub">Click a location to open it: fill in the date, venue, and website; upload the employee list and flyer; add anyone you want BCC'd; and review/approve its emails -- all in one place.</div>
-  </div>
-</header>
-<div class="wrap gate-box" id="gate">
+
+<div class="gate-box" id="gate">
   <h2>Admin sign-in</h2>
   <div class="sub" style="margin-bottom:16px">This page is limited to approved admins. Enter your email and the dashboard passcode.</div>
   <div class="f"><label>Email</label><input type="email" id="gateEmail" placeholder="you@abtaba.com" onkeydown="if(event.key==='Enter')tryGate()"></div>
@@ -124,30 +161,64 @@
   <button class="btn primary" onclick="tryGate()">Continue</button>
   <div class="gate-err" id="gateErr"></div>
 </div>
-<div class="wrap hidden" id="accessWrap"><div id="accessBox"></div></div>
-<div class="wrap hidden" id="templatesWrap"><div id="templatesBox"></div></div>
-<div class="wrap hidden" id="app">Loading…</div>
+
+<div class="layout hidden" id="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Admin</div></div>
+    <button class="sidenav-item active" id="nav-locations" onclick="setPanel('locations')">📍 Locations</button>
+    <button class="sidenav-item" id="nav-wording" onclick="setPanel('wording')">✉️ Email Wording</button>
+    <button class="sidenav-item hidden" id="nav-access" onclick="setPanel('access')">👤 Access</button>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-foot">
+      <div id="whoami"></div>
+      <a href="./winter.html">❄️ View public page</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="panel-locations">
+      <div class="main-head"><h1>Locations</h1></div>
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search by city or state…" oninput="renderTable()">
+        <div class="filter-tabs" id="filterTabs"></div>
+      </div>
+      <div id="locTable"></div>
+    </div>
+    <div id="panel-wording" class="hidden">
+      <div class="main-head"><h1>Email Wording</h1></div>
+      <div id="templatesBox"></div>
+    </div>
+    <div id="panel-access" class="hidden">
+      <div class="main-head"><h1>Access</h1></div>
+      <div id="accessBox"></div>
+    </div>
+  </main>
+</div>
+
+<div class="backdrop" id="backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 <input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
 <input type="file" id="flyerFile" accept="image/jpeg,image/png" style="display:none">
-<footer>Above &amp; Beyond ABA · Winter Holiday Parties Admin</footer>
 
 <script>
 const T0 = today0();
 const OWNER_EMAIL = "lringle@abtaba.com";
-let COLLAPSED = new Set();
 let ADMIN_EMAIL = null;
 let ADMINS = [];
+let openId = null, modalTab = "details";
+let curPanel = "locations";
+let FILTER = "all";
 
+/* ===== sign-in gate ===== */
 function enterApp(email){
   ADMIN_EMAIL=email;
   document.getElementById("gate").classList.add("hidden");
-  document.getElementById("accessWrap").classList.remove("hidden");
-  document.getElementById("templatesWrap").classList.remove("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  const who=document.getElementById("whoami");
-  who.classList.remove("hidden");
-  who.innerHTML=`Signed in as <b>${esc(email)}</b> · <button class="lnk" onclick="signOut()">Sign out</button>`;
+  document.getElementById("shell").classList.remove("hidden");
+  if(email===OWNER_EMAIL) document.getElementById("nav-access").classList.remove("hidden");
+  document.getElementById("whoami").innerHTML=`Signed in as<br><b>${esc(email)}</b><br><button class="lnk" onclick="signOut()">Sign out</button>`;
   load();
 }
 function signOut(){
@@ -185,6 +256,16 @@ async function checkGate(){
   }catch{}
 }
 
+/* ===== sidebar navigation ===== */
+function setPanel(p){
+  curPanel=p;
+  ["locations","wording","access"].forEach(x=>{
+    document.getElementById("panel-"+x).classList.toggle("hidden",x!==p);
+    document.getElementById("nav-"+x).classList.toggle("active",x===p);
+  });
+}
+
+/* ===== access management (owner only) ===== */
 async function loadAdmins(){
   if(ADMIN_EMAIL!==OWNER_EMAIL) return;
   try{
@@ -227,12 +308,18 @@ function renderAccessBox(){
   </div>`;
 }
 
+/* ===== load + refresh ===== */
 async function load(){
   await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts(),loadAdmins(),loadTemplateOverrides()]);
   renderAccessBox();
   renderTemplatesBox();
-  render();
+  renderFilterTabs();
+  renderTable();
+  if(openId) renderModal();
 }
+function refreshAll(){ renderFilterTabs(); renderTable(); if(openId) renderModal(); }
+
+/* ===== email wording: per-location Save / Save-for-all, sample send ===== */
 async function applyToAll(eventId,key,scope){
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
   const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
@@ -245,12 +332,11 @@ async function applyToAll(eventId,key,scope){
   try{
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body,scope})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast(scope==='one'?"✓ Saved.":"✓ Applied to all locations."); }
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; refreshAll(); renderTemplatesBox(); toast(scope==='one'?"✓ Saved.":"✓ Applied to all locations."); }
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
-
 const TEMPLATE_KINDS=[
   {key:'invite',kind:'att',name:'Invite + RSVP'},
   {key:'nudge',kind:'att',name:"RSVP nudge (to people who haven't answered)"},
@@ -273,11 +359,7 @@ function renderTemplatesBox(){
       </div>
     </div>`;
   }).join("");
-  host.innerHTML=`<div class="access-box">
-    <div class="al">✉️ Email wording</div>
-    <div class="sub" style="margin-bottom:10px">Edit any email below and save -- it becomes the default text for that email at every location. (To change the wording for just one location instead, edit it on that location's own card below.)</div>
-    ${blocks}
-  </div>`;
+  host.innerHTML=`<div class="sub" style="margin-bottom:14px">Edit any email below and save -- it becomes the default text for that email at every location. (To change the wording for just one location instead, open that location and edit it there.)</div>${blocks}`;
 }
 async function saveTemplateFromEditor(key){
   const subj=document.getElementById("tsubj:"+key).value, body=document.getElementById("tbody:"+key).value;
@@ -287,7 +369,7 @@ async function saveTemplateFromEditor(key){
   try{
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,subject:subj,body,scope:"all"})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast("✓ Saved — applied to all locations."); }
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; refreshAll(); renderTemplatesBox(); toast("✓ Saved — applied to all locations."); }
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
@@ -304,9 +386,8 @@ async function sendSample(eventId,key){
     else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
-function refreshAll(){ render(); }
-function toggleCollapse(id){ if(COLLAPSED.has(id)) COLLAPSED.delete(id); else COLLAPSED.add(id); render(); }
 
+/* ===== event field editing (same backend calls as before) ===== */
 async function patchEvent(id, fields){
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
   try{
@@ -325,7 +406,7 @@ async function saveDateTime(id){
   const time=(st&&et)?(fmtClock(st)+"–"+fmtClock(et)):(st?fmtClock(st):null);
   const startISO=(date&&st)?date+"T"+st+":00":null;
   const endISO=(date&&et)?date+"T"+et+":00":null;
-  if(await patchEvent(id,{date,time,startISO,endISO})){ render(); toast("Saved ✓"); }
+  if(await patchEvent(id,{date,time,startISO,endISO})){ refreshAll(); toast("Saved ✓"); }
 }
 async function saveTextField(id,field){
   const val=document.getElementById("e"+field+":"+id).value.trim();
@@ -338,7 +419,7 @@ async function saveBcc(id){
 }
 async function saveBudget(id,field,val){
   const n=val===""?null:Number(val);
-  if(await patchEvent(id,{[field]:n})){ render(); toast("Saved ✓"); }
+  if(await patchEvent(id,{[field]:n})){ refreshAll(); toast("Saved ✓"); }
 }
 async function savePL(id){
   const name=document.getElementById("plname:"+id).value, email=document.getElementById("plemail:"+id).value.trim();
@@ -350,9 +431,10 @@ async function saveDirector(id){
   const email=document.getElementById("direml:"+id).value.trim();
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   SERVER_DIRECTORS[id]=email;
-  try{ await fetch("/api/director",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:id,email})}); render(); toast("Saved ✓"); }catch{}
+  try{ await fetch("/api/director",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:id,email})}); refreshAll(); toast("Saved ✓"); }catch{}
 }
 
+/* ===== roster / flyer upload ===== */
 function extractEmailsFromWorkbook(wb){
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
@@ -382,7 +464,7 @@ function uploadList(eventId){
     try{
       const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
       const j=await res.json().catch(()=>({}));
-      if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); render(); }
+      if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); refreshAll(); }
       else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Save failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
@@ -410,7 +492,7 @@ function uploadFlyer(eventId){
       toast("Uploading flyer…");
       const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
       const j=await res.json().catch(()=>({}));
-      if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); render(); }
+      if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); refreshAll(); }
       else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
@@ -418,6 +500,7 @@ function uploadFlyer(eventId){
   inp.click();
 }
 
+/* ===== email section (used inside the modal's Emails tab) ===== */
 function needsApprovalCount(e){
   return winterReminders(e).filter(r=>{ const s=getStatus(e.id,r.key); return s==="draft"||s==="preview"||s==="scheduled"; }).length;
 }
@@ -465,62 +548,157 @@ function emailSection(e){
   }).join("");
 }
 
-function render(){
-  const sorted=WINTER_EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
-  document.getElementById("app").innerHTML=`<div class="grid-cards">${sorted.map(e=>{
-    const place=e.city||e.state;
-    const dateBadge = e.giftOnly ? `<span class="badge gift">Gift only</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
-    const ac=audienceCount(e.label);
-    const rosterBadge = ac==null ? `<span class="badge noroster">No list</span>` : "";
-    const need=needsApprovalCount(e);
-    const needBadge = need>0 ? `<span class="badge needs">${need} need${need===1?'s':''} approval</span>` : "";
-    const collapsed=COLLAPSED.has(e.id);
-
-    const pl=getPL(e.id), dir=getDirector(e.id);
-    const dateFields = e.giftOnly ? "" : `<div class="grid2">
-        <div class="f"><label>Date</label><input type="date" id="edate:${e.id}" value="${e.date||""}" onchange="saveDateTime('${e.id}')"></div>
-        <div class="f"><label>Start / End time</label><div style="display:flex;gap:6px">
-          <input type="time" id="etstart:${e.id}" value="${e.startISO?e.startISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
-          <input type="time" id="etend:${e.id}" value="${e.endISO?e.endISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
-        </div></div>
-        <div class="f"><label>Venue</label><input id="evenue:${e.id}" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('${e.id}','venue')"></div>
-        <div class="f"><label>Address</label><input id="eaddress:${e.id}" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('${e.id}','address')"></div>
-        <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
-      </div>`;
-
-    const body = collapsed ? "" : `<div class="acc-body">
-      ${dateFields}
-      <div class="grid2">
-        <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
-        <div class="f"><label>Party Lead email</label><input id="plemail:${e.id}" type="email" value="${esc(pl.email||"")}" placeholder="name@abtaba.com" onchange="savePL('${e.id}')"></div>
-        <div class="f"><label>State director (BCC)</label><input id="direml:${e.id}" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector('${e.id}')"></div>
-        <div class="f"><label>Other BCC (comma-separated)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
-      </div>
-      <div class="grid2">
-        <div class="f"><label>Budget allotted</label><input type="number" value="${e.budgetAllotted??''}" placeholder="0" onchange="saveBudget('${e.id}','budgetAllotted',this.value)"></div>
-        <div class="f"><label>Budget spent</label><input type="number" value="${e.budgetSpent??0}" placeholder="0" onchange="saveBudget('${e.id}','budgetSpent',this.value)"></div>
-      </div>
-      <div class="row-upload">
-        <div class="info">📋 ${ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet"}</div>
-        <button class="btn" onclick="uploadList('${e.id}')">⬆ Upload list</button>
-      </div>
-      <div class="row-upload">
-        <div class="info">${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" class="flyer-thumb"> Flyer uploaded`:"No flyer uploaded yet"}</div>
-        <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
-      </div>
-      ${e.giftOnly ? `<div style="font-size:13px;color:var(--muted);margin-top:6px">No automated email for gift-only locations.</div>` : `<div class="emails-label">Emails</div>
-      ${emailSection(e)}`}
-    </div>`;
-
-    return `<div class="mini${collapsed?' collapsed':''}">
-      <div class="mini-head">
-        <div class="mini-title">${esc(place)}<button class="collapse-btn" onclick="toggleCollapse('${e.id}')"><span class="chev">▾</span> ${collapsed?"Expand":"Collapse"}</button></div>
-        <div class="badges">${dateBadge}${rosterBadge}${needBadge}</div>
-      </div>
-      ${body}
-    </div>`;
-  }).join("")}</div>`;
+/* ===== location status + filters ===== */
+function statusFor(e){
+  if(e.giftOnly) return "gift";
+  if(!e.date) return "nodate";
+  if(needsApprovalCount(e)>0) return "needs";
+  const rs=winterReminders(e);
+  if(rs.length && rs.every(r=>getStatus(e.id,r.key)==="sent")) return "sent";
+  return "scheduled";
 }
+const FILTERS=[
+  {key:"all",label:"All"},
+  {key:"needs",label:"Needs approval"},
+  {key:"nodate",label:"No date yet"},
+  {key:"scheduled",label:"Scheduled"},
+  {key:"sent",label:"Fully sent"},
+  {key:"gift",label:"Gift only"},
+];
+function setFilter(f){ FILTER=f; renderFilterTabs(); renderTable(); }
+function renderFilterTabs(){
+  const host=document.getElementById("filterTabs");
+  if(!host) return;
+  host.innerHTML=FILTERS.map(f=>{
+    const n=WINTER_EVENTS.filter(e=>f.key==="all"||statusFor(e)===f.key).length;
+    return `<button class="filter-tab${FILTER===f.key?' active':''}" onclick="setFilter('${f.key}')">${f.label} (${n})</button>`;
+  }).join("");
+}
+function renderStats(){
+  const host=document.getElementById("statsBar");
+  if(!host) return;
+  const total=WINTER_EVENTS.length;
+  const needs=WINTER_EVENTS.filter(e=>statusFor(e)==="needs").length;
+  const noDate=WINTER_EVENTS.filter(e=>statusFor(e)==="nodate").length;
+  const totalRsvp=WINTER_EVENTS.filter(e=>!e.giftOnly).reduce((s,e)=>s+rsvpCount(e.id).total,0);
+  host.innerHTML=`
+    <div class="tile"><div class="k">Locations</div><div class="v">${total}</div></div>
+    <div class="tile${needs>0?' accent':''}"><div class="k">Need approval</div><div class="v">${needs}</div></div>
+    <div class="tile"><div class="k">No date yet</div><div class="v">${noDate}</div></div>
+    <div class="tile"><div class="k">Total RSVPs</div><div class="v">${totalRsvp}</div></div>`;
+}
+function statusBadges(e){
+  const dateBadge = e.giftOnly ? `<span class="badge gift">Gift only</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
+  const ac=audienceCount(e.label);
+  const rosterBadge = ac==null ? `<span class="badge noroster">No list</span>` : "";
+  const need=needsApprovalCount(e);
+  const needBadge = need>0 ? `<span class="badge needs">${need} need${need===1?'s':''} approval</span>` : "";
+  const st=statusFor(e);
+  const sentBadge = st==="sent" ? `<span class="badge sent">All sent</span>` : "";
+  return dateBadge+rosterBadge+needBadge+sentBadge;
+}
+function renderTable(){
+  renderStats();
+  const q=(document.getElementById("search").value||"").trim().toLowerCase();
+  let rows=WINTER_EVENTS.slice();
+  if(FILTER!=="all") rows=rows.filter(e=>statusFor(e)===FILTER);
+  if(q) rows=rows.filter(e=>(e.city||"").toLowerCase().includes(q)||(e.state||"").toLowerCase().includes(q));
+  rows.sort((a,b)=>(a.state||"").localeCompare(b.state||""));
+  const host=document.getElementById("locTable");
+  if(!rows.length){ host.innerHTML=`<div class="empty">No locations match.</div>`; return; }
+  host.innerHTML=`<table class="loc-table"><thead><tr><th>Location</th><th>Date</th><th>RSVPs</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rows.map(e=>{
+      const rc=e.giftOnly?null:rsvpCount(e.id);
+      const dateTxt = e.giftOnly ? "—" : (e.date ? fmtShort(ymd(e.date)) : "TBD");
+      const rsvpTxt = rc ? `${rc.total}${e.est?" / "+e.est:""}` : "—";
+      return `<tr class="loc-row" onclick="openLocation('${e.id}')">
+        <td><div class="loc-name">${esc(e.city||e.state)}</div><div class="loc-sub">${esc(e.state)}${e.venue?" · "+esc(e.venue):""}</div></td>
+        <td>${dateTxt}</td>
+        <td>${rsvpTxt}</td>
+        <td>${statusBadges(e)}</td>
+        <td class="chev-cell">›</td>
+      </tr>`;
+    }).join("")}
+  </tbody></table>`;
+}
+
+/* ===== location detail modal ===== */
+function openLocation(id){
+  openId=id; modalTab="details";
+  renderModal();
+  document.getElementById("backdrop").classList.add("show");
+  document.body.style.overflow="hidden";
+}
+function closeModal(){
+  document.getElementById("backdrop").classList.remove("show");
+  document.body.style.overflow="";
+  openId=null;
+  renderTable();
+}
+function setModalTab(t){ modalTab=t; renderModal(); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&openId) closeModal(); });
+
+function renderModal(){
+  const e=WINTER_EVENTS.find(x=>x.id===openId);
+  if(!e) return;
+  const pl=getPL(e.id), dir=getDirector(e.id);
+  const ac=audienceCount(e.label);
+  const need=needsApprovalCount(e);
+
+  const dateFields = e.giftOnly ? "" : `<div class="grid2">
+      <div class="f"><label>Date</label><input type="date" id="edate:${e.id}" value="${e.date||""}" onchange="saveDateTime('${e.id}')"></div>
+      <div class="f"><label>Start / End time</label><div style="display:flex;gap:6px">
+        <input type="time" id="etstart:${e.id}" value="${e.startISO?e.startISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
+        <input type="time" id="etend:${e.id}" value="${e.endISO?e.endISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
+      </div></div>
+      <div class="f"><label>Venue</label><input id="evenue:${e.id}" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('${e.id}','venue')"></div>
+      <div class="f"><label>Address</label><input id="eaddress:${e.id}" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('${e.id}','address')"></div>
+      <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
+    </div>`;
+
+  const detailsTab = `
+    ${dateFields}
+    <div class="grid2">
+      <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
+      <div class="f"><label>Party Lead email</label><input id="plemail:${e.id}" type="email" value="${esc(pl.email||"")}" placeholder="name@abtaba.com" onchange="savePL('${e.id}')"></div>
+      <div class="f"><label>State director (BCC)</label><input id="direml:${e.id}" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector('${e.id}')"></div>
+      <div class="f"><label>Other BCC (comma-separated)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
+    </div>
+    <div class="grid2">
+      <div class="f"><label>Budget allotted</label><input type="number" value="${e.budgetAllotted??''}" placeholder="0" onchange="saveBudget('${e.id}','budgetAllotted',this.value)"></div>
+      <div class="f"><label>Budget spent</label><input type="number" value="${e.budgetSpent??0}" placeholder="0" onchange="saveBudget('${e.id}','budgetSpent',this.value)"></div>
+    </div>
+    <div class="row-upload">
+      <div class="info">📋 ${ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet"}</div>
+      <button class="btn" onclick="uploadList('${e.id}')">⬆ Upload list</button>
+    </div>
+    <div class="row-upload">
+      <div class="info">${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" class="flyer-thumb"> Flyer uploaded`:"No flyer uploaded yet"}</div>
+      <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
+    </div>`;
+
+  const emailsTab = e.giftOnly
+    ? `<div style="font-size:13px;color:var(--muted)">No automated email for gift-only locations.</div>`
+    : emailSection(e);
+
+  const tabs = e.giftOnly ? "" : `<div class="m-tabs">
+      <button class="${modalTab==='details'?'active':''}" onclick="setModalTab('details')">Details</button>
+      <button class="${modalTab==='emails'?'active':''}" onclick="setModalTab('emails')">Emails${need>0?` <span class="tab-badge">${need}</span>`:''}</button>
+    </div>`;
+
+  document.getElementById("modal").innerHTML=`
+    <div class="m-head">
+      <button class="x" onclick="closeModal()">×</button>
+      <h2>${esc(e.city||e.state)}</h2>
+      ${tabs}
+    </div>
+    <div class="m-body">${e.giftOnly ? detailsTab+emailsTab : (modalTab==='details'?detailsTab:emailsTab)}</div>`;
+}
+
+/* ===== toast ===== */
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),6000);}
+
 checkGate();
 </script>
 </body>
