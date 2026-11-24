@@ -24,6 +24,19 @@ const SEED = {
 
 const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'date', 'time', 'startISO', 'endISO', 'est', 'giftOnly', 'budgetGroup', 'budgetAllotted', 'budgetSpent', 'notes', 'plBcc', 'flyerUrl', 'extraBcc'];
 
+// Email allowlist for admin.html -- gates who can get past the email prompt, on
+// top of (not instead of) the existing shared passcode. Only the owner can add
+// or remove people from this list.
+const ADMINS_KEY = 'admins.json';
+const OWNER = 'lringle@abtaba.com';
+async function readAdmins() {
+  const a = await readJSON(ADMINS_KEY, null);
+  if (a && Array.isArray(a.emails)) return a;
+  const seeded = { owner: OWNER, emails: [OWNER, 'amarkovich@abtaba.com'] };
+  await writeJSON(ADMINS_KEY, seeded);
+  return seeded;
+}
+
 /**
  * Winter event metadata store — replaces the hardcoded-array pattern used for
  * summer so dates/venues/budget can be filled in from the dashboard with no
@@ -64,6 +77,30 @@ export default async function handler(req, res) {
 
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON.' }); } }
+
+    if (body.action === 'checkAdmin') {
+      const email = String(body.email || '').trim().toLowerCase();
+      const admins = await readAdmins();
+      return res.status(200).json({ allowed: admins.emails.map((e) => e.toLowerCase()).includes(email) });
+    }
+    if (body.action === 'listAdmins' || body.action === 'addAdmin' || body.action === 'removeAdmin') {
+      const requester = String(body.requesterEmail || '').trim().toLowerCase();
+      if (requester !== OWNER) return res.status(403).json({ error: 'Only the owner can manage admin access.' });
+      const admins = await readAdmins();
+      if (body.action === 'addAdmin') {
+        const email = String(body.email || '').trim().toLowerCase();
+        if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required.' });
+        if (!admins.emails.map((e) => e.toLowerCase()).includes(email)) admins.emails.push(email);
+        await writeJSON(ADMINS_KEY, admins);
+      } else if (body.action === 'removeAdmin') {
+        const email = String(body.email || '').trim().toLowerCase();
+        if (email === OWNER) return res.status(400).json({ error: "Can't remove the owner." });
+        admins.emails = admins.emails.filter((e) => e.toLowerCase() !== email);
+        await writeJSON(ADMINS_KEY, admins);
+      }
+      return res.status(200).json({ ok: true, admins: admins.emails });
+    }
+
     const id = body && body.id;
     if (!id) return res.status(400).json({ error: 'id required.' });
 

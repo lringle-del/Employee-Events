@@ -87,6 +87,17 @@
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
   .toast.show{display:block}
   footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px}
+  .hidden{display:none!important}
+  .gate-box{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 26px;max-width:380px;margin:60px auto}
+  .gate-box h2{font-family:'Libre Caslon Display',Georgia,serif;margin:0 0 6px}
+  .gate-box .f{margin-bottom:14px}
+  .gate-box .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:4px}
+  .gate-box .f input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
+  .gate-err{color:var(--clay);font-size:13px;margin-top:10px}
+  .access-box{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 20px;margin:18px 0}
+  .access-box .al{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:8px}
+  .access-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13.5px}
+  .access-row .lnk{color:var(--clay)}
   @media(max-width:700px){.grid2{grid-template-columns:1fr}}
 </style>
 </head>
@@ -104,7 +115,16 @@
     <div class="sub">Click a location to open it: fill in the date, venue, and website; upload the employee list and flyer; add anyone you want BCC'd; and review/approve its emails -- all in one place.</div>
   </div>
 </header>
-<div class="wrap" id="app">Loading…</div>
+<div class="wrap gate-box" id="gate">
+  <h2>Admin sign-in</h2>
+  <div class="sub" style="margin-bottom:16px">This page is limited to approved admins. Enter your email and the dashboard passcode.</div>
+  <div class="f"><label>Email</label><input type="email" id="gateEmail" placeholder="you@abtaba.com" onkeydown="if(event.key==='Enter')tryGate()"></div>
+  <div class="f"><label>Passcode</label><input type="password" id="gatePass" onkeydown="if(event.key==='Enter')tryGate()"></div>
+  <button class="btn primary" onclick="tryGate()">Continue</button>
+  <div class="gate-err" id="gateErr"></div>
+</div>
+<div class="wrap hidden" id="accessWrap"><div id="accessBox"></div></div>
+<div class="wrap hidden" id="app">Loading…</div>
 <div class="toast" id="toast"></div>
 <input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
 <input type="file" id="flyerFile" accept="image/jpeg,image/png" style="display:none">
@@ -112,10 +132,94 @@
 
 <script>
 const T0 = today0();
+const OWNER_EMAIL = "lringle@abtaba.com";
 let COLLAPSED = new Set();
+let ADMIN_EMAIL = null;
+let ADMINS = [];
+
+async function tryGate(){
+  const email=document.getElementById("gateEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("gatePass").value;
+  const err=document.getElementById("gateErr");
+  err.textContent="";
+  if(!email||!email.includes("@")){ err.textContent="Enter a valid email."; return; }
+  if(!pass){ err.textContent="Enter the passcode."; return; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"checkAdmin",email})});
+    const j=await res.json().catch(()=>({}));
+    if(res.status===401){ err.textContent="Incorrect passcode."; return; }
+    if(!res.ok){ err.textContent=j.error||"Something went wrong."; return; }
+    if(!j.allowed){ err.textContent="This email doesn't have admin access."; return; }
+    sessionStorage.setItem("send_pass",pass);
+    sessionStorage.setItem("admin_email",email);
+    ADMIN_EMAIL=email;
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("accessWrap").classList.remove("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    load();
+  }catch(e){ err.textContent="Couldn't reach the server ("+e.message+")."; }
+}
+async function checkGate(){
+  const email=sessionStorage.getItem("admin_email");
+  const pass=sessionStorage.getItem("send_pass");
+  if(!email||!pass) return;
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"checkAdmin",email})});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok||!j.allowed){ sessionStorage.removeItem("admin_email"); sessionStorage.removeItem("send_pass"); return; }
+    ADMIN_EMAIL=email;
+    document.getElementById("gate").classList.add("hidden");
+    document.getElementById("accessWrap").classList.remove("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    load();
+  }catch{}
+}
+
+async function loadAdmins(){
+  if(ADMIN_EMAIL!==OWNER_EMAIL) return;
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"listAdmins",requesterEmail:ADMIN_EMAIL})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok) ADMINS=j.admins||[];
+  }catch{}
+}
+async function addAdmin(){
+  const inp=document.getElementById("newAdminEmail");
+  const email=inp.value.trim().toLowerCase();
+  if(!email||!email.includes("@")){ toast("Enter a valid email."); return; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"addAdmin",requesterEmail:ADMIN_EMAIL,email})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ ADMINS=j.admins||[]; inp.value=""; renderAccessBox(); toast("✓ Added "+email); }
+    else toast("Couldn't add: "+(j.error||("HTTP "+res.status)));
+  }catch(e){ toast("Couldn't reach the server ("+e.message+")."); }
+}
+async function removeAdmin(email){
+  if(!confirm("Remove "+email+"'s admin access?")) return;
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"removeAdmin",requesterEmail:ADMIN_EMAIL,email})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ ADMINS=j.admins||[]; renderAccessBox(); toast("Removed."); }
+    else toast("Couldn't remove: "+(j.error||("HTTP "+res.status)));
+  }catch(e){ toast("Couldn't reach the server ("+e.message+")."); }
+}
+function renderAccessBox(){
+  const host=document.getElementById("accessBox");
+  if(!host) return;
+  if(ADMIN_EMAIL!==OWNER_EMAIL){ host.innerHTML=""; return; }
+  host.innerHTML=`<div class="access-box">
+    <div class="al">Who has admin access</div>
+    ${ADMINS.map(e=>`<div class="access-row">${esc(e)}${e===OWNER_EMAIL?' <span style="color:var(--muted);font-size:12px">(owner)</span>':` <button class="lnk access-row" style="font-size:12.5px" onclick="removeAdmin('${esc(e)}')">remove</button>`}</div>`).join("")}
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="newAdminEmail" type="email" placeholder="name@abtaba.com" style="flex:1;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px">
+      <button class="btn" onclick="addAdmin()">+ Add</button>
+    </div>
+  </div>`;
+}
 
 async function load(){
-  await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts()]);
+  await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts(),loadAdmins()]);
+  renderAccessBox();
   render();
 }
 function refreshAll(){ render(); }
@@ -332,7 +436,7 @@ function render(){
     </div>`;
   }).join("")}</div>`;
 }
-load();
+checkGate();
 </script>
 </body>
 </html>
