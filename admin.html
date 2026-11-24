@@ -33,13 +33,10 @@
   h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:32px;margin:20px 0 4px}
   .sub{color:var(--muted);font-size:14px;max-width:680px}
 
-  .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin:18px 0}
-  .mini{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
-  .mini-head{padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:7px}
-  .mini-head:hover{background:#fffdf8}
-  .mini-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:19px;display:flex;align-items:center;gap:8px}
-  .mini-title .chev{font-size:12px;color:var(--muted);transition:transform .15s;margin-left:auto}
-  .mini.open .mini-title .chev{transform:rotate(90deg)}
+  .grid-cards{margin:18px 0}
+  .mini{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin:0 0 16px}
+  .mini-head{padding:18px 22px 10px;display:flex;flex-direction:column;gap:9px}
+  .mini-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:22px;display:flex;align-items:center;gap:8px}
   .badges{display:flex;gap:6px;flex-wrap:wrap}
   .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
   .badge.confirmed{background:#dcf2e6;color:#1f7a56}
@@ -48,8 +45,7 @@
   .badge.needs{background:var(--clay);color:#fff}
   .badge.noroster{background:#fdeccd;color:#9a6b12}
 
-  .acc-body{display:none;border-top:1px solid var(--parchment);padding:16px}
-  .mini.open .acc-body{display:block}
+  .acc-body{border-top:1px solid var(--parchment);padding:16px 22px 20px}
   .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:12px}
   .grid2.full{grid-template-columns:1fr}
   .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
@@ -78,6 +74,7 @@
   .c-sent{background:var(--green);color:#fff}
   .c-skip{background:#e6e9ee;color:var(--muted)}
   .em-body{padding:11px 14px}
+  .edit-label{font-size:11.5px;font-weight:700;color:var(--amber);margin-bottom:6px}
   .em-body input.subj{width:100%;font-family:inherit;font-size:13px;font-weight:600;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:var(--white)}
   .em-body textarea{width:100%;font-family:inherit;font-size:12.5px;line-height:1.5;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--white);min-height:130px;resize:vertical;color:var(--ink)}
   .em-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
@@ -86,7 +83,7 @@
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
   .toast.show{display:block}
   footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px}
-  @media(max-width:700px){.grid2{grid-template-columns:1fr}.grid-cards{grid-template-columns:1fr}}
+  @media(max-width:700px){.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -112,14 +109,12 @@
 
 <script>
 const T0 = today0();
-let OPEN_CARDS = new Set();
 
 async function load(){
   await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts()]);
   render();
 }
 function refreshAll(){ render(); }
-function toggleCard(id){ if(OPEN_CARDS.has(id)) OPEN_CARDS.delete(id); else OPEN_CARDS.add(id); render(); }
 
 async function patchEvent(id, fields){
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
@@ -263,6 +258,7 @@ function emailSection(e){
         <span class="st ${st.cls}">${st.txt}</span>
       </div>
       <div class="em-body">
+        <div class="edit-label">✏️ Edit the text below if you'd like to change the wording</div>
         <input class="subj" id="subj:${r.key}" value="${esc(t.subject)}">
         <textarea id="body:${r.key}">${esc(t.body)}</textarea>
         <div class="em-foot">${controls}</div>
@@ -275,7 +271,6 @@ function render(){
   const sorted=WINTER_EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
   document.getElementById("app").innerHTML=`<div class="grid-cards">${sorted.map(e=>{
     const place=e.city||e.state;
-    const open=OPEN_CARDS.has(e.id);
     const dateBadge = e.giftOnly ? `<span class="badge gift">Gift only</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
     const ac=audienceCount(e.label);
     const rosterBadge = ac==null ? `<span class="badge noroster">No list</span>` : "";
@@ -294,7 +289,7 @@ function render(){
         <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
       </div>`;
 
-    const body = !open ? "" : `<div class="acc-body">
+    const body = `<div class="acc-body">
       ${dateFields}
       <div class="grid2">
         <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
@@ -314,9 +309,9 @@ function render(){
       ${emailSection(e)}
     </div>`;
 
-    return `<div class="mini${open?' open':''}">
-      <div class="mini-head" onclick="toggleCard('${e.id}')">
-        <div class="mini-title">${esc(place)}<span class="chev">▶</span></div>
+    return `<div class="mini">
+      <div class="mini-head">
+        <div class="mini-title">${esc(place)}</div>
         <div class="badges">${dateBadge}${rosterBadge}${needBadge}</div>
       </div>
       ${body}
