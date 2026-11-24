@@ -226,9 +226,22 @@ function renderAccessBox(){
 }
 
 async function load(){
-  await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts(),loadAdmins()]);
+  await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts(),loadAdmins(),loadTemplateOverrides()]);
   renderAccessBox();
   render();
+}
+async function applyToAll(eventId,key){
+  const e=WINTER_EVENTS.find(x=>x.id===eventId);
+  const subj=document.getElementById("subj:"+key).value, body=document.getElementById("body:"+key).value;
+  if(!confirm(`Apply this wording to every location's "${winterReminders(e).find(x=>x.key===key).name}" email?\n\nThis updates the default text for every location that hasn't been approved yet. Already-approved or sent emails are not changed.`)) return;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); toast("✓ Applied to all locations."); }
+    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't apply: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
 function refreshAll(){ render(); }
 function toggleCollapse(id){ if(COLLAPSED.has(id)) COLLAPSED.delete(id); else COLLAPSED.add(id); render(); }
@@ -356,16 +369,18 @@ function emailSection(e){
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
+    const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}')" title="Use this wording as the default for every location's ${r.name}">📋 Apply to all</button>`;
     let controls;
     if(status==="draft"){
       controls=`<button class="btn primary" onclick="approveFor('${e.id}','${r.key}')">✓ Approve &amp; schedule</button>
+        ${applyBtn}
         <button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button>
         <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
         <span class="foot-note">Not scheduled</span>`;
     }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
       const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
-      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      controls=`${approveBtn}${applyBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
       controls=`<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{

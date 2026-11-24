@@ -29,6 +29,7 @@ const EDITABLE_FIELDS = ['state', 'city', 'label', 'venue', 'address', 'url', 'd
 // or remove people from this list.
 const ADMINS_KEY = 'admins.json';
 const OWNER = 'lringle@abtaba.com';
+const TEMPLATES_KEY = 'emailTemplateOverrides.json';
 async function readAdmins() {
   const a = await readJSON(ADMINS_KEY, null);
   if (a && Array.isArray(a.emails)) return a;
@@ -64,6 +65,11 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'GET' && req.query && 'templates' in req.query) {
+    const overrides = await readJSON(TEMPLATES_KEY, {});
+    return res.status(200).json({ overrides });
+  }
+
   if (req.method === 'GET') {
     let all = await readJSON(KEY, null);
     if (!all) { all = SEED; await writeJSON(KEY, all); }
@@ -78,6 +84,16 @@ export default async function handler(req, res) {
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON.' }); } }
 
+    if (body.action === 'saveTemplateOverride') {
+      const key = String(body.key || '');
+      const sourceEventId = String(body.sourceEventId || '');
+      const subject = body.subject, bodyText = body.body;
+      if (!key || !sourceEventId || !subject || !bodyText) return res.status(400).json({ error: 'key, sourceEventId, subject, and body are required.' });
+      const overrides = await readJSON(TEMPLATES_KEY, {});
+      overrides[key] = { sourceEventId, subject, body: bodyText };
+      await writeJSON(TEMPLATES_KEY, overrides);
+      return res.status(200).json({ ok: true, overrides });
+    }
     if (body.action === 'checkAdmin') {
       const email = String(body.email || '').trim().toLowerCase();
       const admins = await readAdmins();
