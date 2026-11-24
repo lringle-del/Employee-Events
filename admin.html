@@ -164,7 +164,7 @@
 
 <div class="layout hidden" id="shell">
   <aside class="sidebar">
-    <div class="sidebar-logo"><div class="name">Above &amp; Beyond ABA</div><div class="tag">Admin</div></div>
+    <div class="sidebar-logo"><img src="/logo.svg" alt="Above &amp; Beyond ABA Therapy" style="width:100%;max-width:170px;height:auto;display:block"><div class="tag">Admin</div></div>
     <a class="sidenav-item" href="./winter.html">❄️ Winter Holiday Parties</a>
     <div class="sidebar-sep"></div>
     <button class="sidenav-item active" id="nav-locations" onclick="setPanel('locations')">📍 Locations</button>
@@ -578,15 +578,22 @@ function renderFilterTabs(){
 function renderStats(){
   const host=document.getElementById("statsBar");
   if(!host) return;
-  const total=WINTER_EVENTS.length;
-  const needs=WINTER_EVENTS.filter(e=>statusFor(e)==="needs").length;
+  const parties=WINTER_EVENTS.filter(e=>!e.giftOnly);
+  const approvedLocations=parties.filter(e=>{ const s=statusFor(e); return s==="scheduled"||s==="sent"; }).length;
+  let emailsSent=0, emailsNeeding=0;
+  parties.forEach(e=>{
+    winterReminders(e).forEach(r=>{
+      const s=getStatus(e.id,r.key);
+      if(s==="sent") emailsSent++;
+      else if(s==="draft"||s==="preview"||s==="scheduled") emailsNeeding++;
+    });
+  });
   const noDate=WINTER_EVENTS.filter(e=>statusFor(e)==="nodate").length;
-  const totalRsvp=WINTER_EVENTS.filter(e=>!e.giftOnly).reduce((s,e)=>s+rsvpCount(e.id).total,0);
   host.innerHTML=`
-    <div class="tile"><div class="k">Locations</div><div class="v">${total}</div></div>
-    <div class="tile${needs>0?' accent':''}"><div class="k">Need approval</div><div class="v">${needs}</div></div>
-    <div class="tile"><div class="k">No date yet</div><div class="v">${noDate}</div></div>
-    <div class="tile"><div class="k">Total RSVPs</div><div class="v">${totalRsvp}</div></div>`;
+    <div class="tile"><div class="k">Locations approved</div><div class="v">${approvedLocations} / ${parties.length}</div></div>
+    <div class="tile"><div class="k">Emails sent</div><div class="v">${emailsSent}</div></div>
+    <div class="tile${emailsNeeding>0?' accent':''}"><div class="k">Emails need approval</div><div class="v">${emailsNeeding}</div></div>
+    <div class="tile"><div class="k">No date yet</div><div class="v">${noDate}</div></div>`;
 }
 function statusBadges(e){
   const dateBadge = e.giftOnly ? `<span class="badge gift">Gift only</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
