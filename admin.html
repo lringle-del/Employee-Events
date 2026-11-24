@@ -445,6 +445,29 @@ async function editAndRepreview(eventId,key){
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
+// For when he's not sure how to fix it himself (e.g. a rendering problem on his end,
+// not a wording mistake he can retype) -- just describe the issue and hand it to the
+// owner instead of editing it.
+async function flagForOwner(eventId,key){
+  const e=WINTER_EVENTS.find(x=>x.id===eventId);
+  const name=winterReminders(e).find(x=>x.key===key).name;
+  const note=prompt(`What's wrong with "${name}"? (e.g. "the emojis show up as question marks")`);
+  if(note===null) return;
+  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  toast("Sending…");
+  try{
+    const res=await fetch("/api/send",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({
+      subject:`⚠ ${ADMIN_EMAIL} flagged an issue: ${e.city||e.state} — ${name}`,
+      text:(note?`What's wrong: ${note}\n\n`:"")+`Location: ${e.city||e.state}\n\n----- CURRENT TEXT -----\nSubject: ${subj}\n\n${body}`,
+      to:["lringle@abtaba.com"]
+    })});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok) toast("✓ Sent to Liba — she'll take it from here.");
+    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
 
 /* ===== event field editing (same backend calls as before) ===== */
 async function patchEvent(id, fields){
@@ -574,10 +597,11 @@ function emailSection(e){
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att7"||r.key==="att1")&&dir?(" · bcc "+esc(dir)):""));
     const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','one')" title="Save this wording for ${esc(e.city||e.state)} only">💾 Save</button><button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','all')" title="Use this wording as the default for every location's ${r.name}">🌍 Save for all locations</button>`;
     const sampleBtn=`<button class="btn ghost" onclick="sendSample('${e.id}','${r.key}')" title="Email yourself a copy of this exact text">📧 Send me a sample</button>`;
+    const flagBtn=`<button class="btn ghost" onclick="flagForOwner('${e.id}','${r.key}')" title="Not sure how to fix it yourself? Let Liba know instead">🚩 Flag for Liba</button>`;
     let controls;
     if(status==="draft"){
       controls=`<button class="btn primary" onclick="approveFor('${e.id}','${r.key}')">✓ Approve &amp; schedule</button>
-        ${applyBtn}${sampleBtn}
+        ${applyBtn}${sampleBtn}${flagBtn}
         <button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button>
         <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
         <span class="foot-note">Not scheduled</span>`;
@@ -585,9 +609,9 @@ function emailSection(e){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
       const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
       const fixBtn = `<button class="btn ghost" onclick="editAndRepreview('${e.id}','${r.key}')" title="Save this fix and send a fresh approval email right away">✏️ Save &amp; re-send for approval</button>`;
-      controls=`${approveBtn}${fixBtn}${applyBtn}${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      controls=`${approveBtn}${fixBtn}${applyBtn}${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
-      controls=`${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+      controls=`${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{
       controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
@@ -763,7 +787,7 @@ function renderModal(){
       <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
     </div>`;
 
-  const fixBanner = focusKey ? `<div class="fix-banner">✏️ <b>You're here to fix this email.</b> Edit the subject and/or body below -- for example, if emojis or special characters showed up wrong in the email you got, just delete and retype that part. When it looks right, click <b>"Save &amp; re-send for approval"</b> and a fresh approval email will go out automatically.</div>` : "";
+  const fixBanner = focusKey ? `<div class="fix-banner">✏️ <b>You're here to fix this email.</b> Edit the subject and/or body below -- for example, if emojis or special characters showed up wrong in the email you got, just delete and retype that part. When it looks right, click <b>"Save &amp; re-send for approval"</b> and a fresh approval email will go out automatically.<br><br>Not sure how to fix it, or it's not something you can edit (like a display problem)? Click <b>"🚩 Flag for Liba"</b> instead and she'll take care of it.</div>` : "";
   const emailsTab = e.giftOnly
     ? `<div style="font-size:13px;color:var(--muted)">No automated email for gift-only locations.</div>`
     : fixBanner + renderEmailBlocks(e, focusKey);
