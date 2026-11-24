@@ -9,19 +9,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Display&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="/lib/dashboard-shared.js"></script>
+<script src="/lib/winter-shared.js"></script>
 <style>
   :root{
-    --vanilla:#f5f0e5; --biscuit:#e8dbc4; --parchment:#ebd1ab;
+    --vanilla:#f5f0e5; --parchment:#ebd1ab;
     --frost:#2f8fc9; --sky:#8abaff; --lagoon:#457acc; --midnight:#1c458c;
     --ink:#1c458c; --muted:#5f6b7a; --line:#e3d6bd; --white:#ffffff;
-    --green:#2f9e6f; --amber:#c98a1a;
+    --green:#2f9e6f; --amber:#c98a1a; --clay:#de5730;
     --shadow:0 1px 2px rgba(28,69,140,.08),0 8px 24px rgba(28,69,140,.07);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vanilla);color:var(--ink);line-height:1.5}
   a{color:var(--lagoon)}
-  .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
   header.brand{background:var(--vanilla);padding:20px 0 22px;border-bottom:1px solid var(--line)}
   .brand-row{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
   .logo .name{font-family:'Fredoka','Inter',sans-serif;font-weight:600;font-size:24px;color:#141414}
@@ -30,27 +31,62 @@
   .nav a{font-size:13.5px;font-weight:700;text-decoration:none;color:var(--muted);padding:8px 13px;border-radius:9px}
   .nav a.active{background:var(--white);color:var(--ink);box-shadow:var(--shadow)}
   h1{font-family:'Libre Caslon Display',Georgia,serif;font-weight:400;font-size:32px;margin:20px 0 4px}
-  .sub{color:var(--muted);font-size:14px;max-width:640px}
-  .card{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin:16px 0;padding:18px 22px}
-  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .card-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:22px;flex:1}
-  .badge{font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:999px}
+  .sub{color:var(--muted);font-size:14px;max-width:680px}
+
+  .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin:18px 0}
+  .mini{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .mini-head{padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:7px}
+  .mini-head:hover{background:#fffdf8}
+  .mini-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:19px;display:flex;align-items:center;gap:8px}
+  .mini-title .chev{font-size:12px;color:var(--muted);transition:transform .15s;margin-left:auto}
+  .mini.open .mini-title .chev{transform:rotate(90deg)}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
   .badge.confirmed{background:#dcf2e6;color:#1f7a56}
   .badge.tbd{background:#fdeccd;color:#9a6b12}
   .badge.gift{background:#ffe6c9;color:#9a5a12}
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:12px}
-  .grid.full{grid-template-columns:1fr}
+  .badge.needs{background:var(--clay);color:#fff}
+  .badge.noroster{background:#fdeccd;color:#9a6b12}
+
+  .acc-body{display:none;border-top:1px solid var(--parchment);padding:16px}
+  .mini.open .acc-body{display:block}
+  .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 16px;margin-bottom:12px}
+  .grid2.full{grid-template-columns:1fr}
   .f label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin-bottom:3px}
   .f input{width:100%;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#fffdf8}
   .row-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--parchment);margin-top:6px}
-  .row-upload .info{font-size:13px;font-weight:600;flex:1}
+  .row-upload .info{font-size:13px;font-weight:600;flex:1;display:flex;align-items:center;gap:8px}
+  .flyer-thumb{height:40px;border-radius:7px;border:1px solid var(--line)}
   .btn{font-family:inherit;font-weight:700;font-size:12.5px;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;box-shadow:var(--shadow)}
   .btn:hover{background:var(--parchment)}
-  .flyer-thumb{height:44px;border-radius:7px;border:1px solid var(--line)}
+  .btn.primary{background:linear-gradient(135deg,var(--sky),var(--frost));color:#fff;border:none}
+  .btn.ghost{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+  .lnk{background:none;border:none;color:var(--lagoon);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:0}
+
+  .emails-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:14px 0 6px}
+  .em{background:#fffdf8;border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  .em-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--parchment);flex-wrap:wrap}
+  .em-h .dot{width:9px;height:9px;border-radius:50%}
+  .dot.pl{background:var(--lagoon)}.dot.att{background:var(--frost)}
+  .em-h .name{font-weight:800;font-size:13px}
+  .em-h .to{font-size:11.5px;color:var(--muted)}
+  .st{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap;margin-left:auto}
+  .c-needs{background:#fdeccd;color:#9a6b12}
+  .c-appr{background:#dcf2e6;color:#1f7a56}
+  .c-sched{background:#e4edfb;color:#457acc}
+  .c-due{background:var(--clay);color:#fff}
+  .c-sent{background:var(--green);color:#fff}
+  .c-skip{background:#e6e9ee;color:var(--muted)}
+  .em-body{padding:11px 14px}
+  .em-body input.subj{width:100%;font-family:inherit;font-size:13px;font-weight:600;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:var(--white)}
+  .em-body textarea{width:100%;font-family:inherit;font-size:12.5px;line-height:1.5;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--white);min-height:130px;resize:vertical;color:var(--ink)}
+  .em-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
+  .foot-note{font-size:11.5px;color:var(--muted);margin-left:auto}
+
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--midnight);color:#fff;padding:13px 20px;border-radius:12px;font-size:13.5px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:80;max-width:520px;display:none}
   .toast.show{display:block}
   footer{color:var(--muted);font-size:12.5px;text-align:center;padding:30px 0 46px}
-  @media(max-width:700px){.grid{grid-template-columns:1fr}}
+  @media(max-width:700px){.grid2{grid-template-columns:1fr}.grid-cards{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -65,7 +101,7 @@
       </nav>
     </div>
     <h1>Admin</h1>
-    <div class="sub">Fill in the date, time, venue, and website for each party, upload the employee list and flyer, and add anyone you want BCC'd. Everything here feeds straight into the emails. Approving and sending still happens on the <a href="./winter.html">main dashboard</a>.</div>
+    <div class="sub">Click a location to open it: fill in the date, venue, and website; upload the employee list and flyer; add anyone you want BCC'd; and review/approve its emails -- all in one place.</div>
   </div>
 </header>
 <div class="wrap" id="app">Loading…</div>
@@ -75,27 +111,22 @@
 <footer>Above &amp; Beyond ABA · Winter Holiday Parties Admin</footer>
 
 <script>
-let EVENTS=[], AUD_COUNTS={};
-let toastT;
-function toast(msg){const t=document.getElementById("toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),6000);}
+const T0 = today0();
+let OPEN_CARDS = new Set();
 
 async function load(){
-  const [evR,auR]=await Promise.all([
-    fetch("/api/winter-events",{cache:"no-store"}).then(r=>r.json()).catch(()=>({events:[]})),
-    fetch("/api/audience",{cache:"no-store"}).then(r=>r.json()).catch(()=>({counts:{}})),
-  ]);
-  EVENTS=evR.events||[];
-  AUD_COUNTS=auR.counts||{};
+  await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts()]);
   render();
 }
-function audienceCount(label){ const key="Winter "+label; return Object.prototype.hasOwnProperty.call(AUD_COUNTS,key)?AUD_COUNTS[key]:null; }
+function refreshAll(){ render(); }
+function toggleCard(id){ if(OPEN_CARDS.has(id)) OPEN_CARDS.delete(id); else OPEN_CARDS.add(id); render(); }
 
 async function patchEvent(id, fields){
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
   try{
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id,...fields})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok){ const i=EVENTS.findIndex(x=>x.id===id); if(i>=0) EVENTS[i]=j.event; return true; }
+    if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===id); if(i>=0) WINTER_EVENTS[i]=j.event; return true; }
     if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
@@ -119,6 +150,18 @@ async function saveBcc(id){
   const list=raw.split(",").map(s=>s.trim()).filter(Boolean);
   if(await patchEvent(id,{extraBcc:list})) toast("Saved ✓");
 }
+async function savePL(id){
+  const name=document.getElementById("plname:"+id).value, email=document.getElementById("plemail:"+id).value.trim();
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  SERVER_PLS[id]={name,email};
+  try{ await fetch("/api/pl",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:id,name,email})}); toast("Saved ✓"); }catch{}
+}
+async function saveDirector(id){
+  const email=document.getElementById("direml:"+id).value.trim();
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  SERVER_DIRECTORS[id]=email;
+  try{ await fetch("/api/director",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:id,email})}); render(); toast("Saved ✓"); }catch{}
+}
 
 function extractEmailsFromWorkbook(wb){
   const ws=wb.Sheets[wb.SheetNames[0]];
@@ -133,7 +176,7 @@ function extractEmailsFromWorkbook(wb){
   return [...out];
 }
 function uploadList(eventId){
-  const e=EVENTS.find(x=>x.id===eventId);
+  const e=WINTER_EVENTS.find(x=>x.id===eventId);
   const inp=document.getElementById("listFile");
   inp.value="";
   inp.onchange=async()=>{
@@ -177,7 +220,7 @@ function uploadFlyer(eventId){
       toast("Uploading flyer…");
       const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
       const j=await res.json().catch(()=>({}));
-      if(res.ok){ const i=EVENTS.findIndex(x=>x.id===eventId); if(i>=0) EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); render(); }
+      if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); render(); }
       else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
@@ -185,20 +228,62 @@ function uploadFlyer(eventId){
   inp.click();
 }
 
-function render(){
-  const sorted=EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
-  document.getElementById("app").innerHTML=sorted.map(e=>{
-    const place=e.city||e.state;
-    const badge = e.giftOnly ? `<span class="badge gift">Gift only — no party</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
+function needsApprovalCount(e){
+  return winterReminders(e).filter(r=>{ const s=getStatus(e.id,r.key); return s==="draft"||s==="preview"||s==="scheduled"; }).length;
+}
+function emailSection(e){
+  const pl=getPL(e.id), dir=getDirector(e.id);
+  const rs=winterReminders(e);
+  return rs.map(r=>{
+    const t=template(e,r);
+    const status=getStatus(e.id,r.key);
+    const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
-    const rosterInfo = ac!=null ? `<b>${ac}</b> emails uploaded` : "No list uploaded yet";
-    const flyerInfo = e.flyerUrl ? `<img src="${esc(e.flyerUrl)}" class="flyer-thumb">` : "No flyer uploaded yet";
-    return `<div class="card">
-      <div class="card-head">
-        <div class="card-title">${esc(place)}</div>
-        ${badge}
+    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
+    let controls;
+    if(status==="draft"){
+      controls=`<button class="btn primary" onclick="approveFor('${e.id}','${r.key}')">✓ Approve &amp; schedule</button>
+        <button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button>
+        <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
+        <span class="foot-note">Not scheduled</span>`;
+    }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
+      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
+      const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
+      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+    }else if(status==="sent"){
+      controls=`<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+    }else{
+      controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
+    }
+    return `<div class="em">
+      <div class="em-h">
+        <span class="dot ${r.kind}"></span>
+        <span class="name">${r.name}</span>
+        <span class="to">→ ${toDetail} · sends ${fmtShort(r.date)}</span>
+        <span class="st ${st.cls}">${st.txt}</span>
       </div>
-      ${e.giftOnly ? "" : `<div class="grid">
+      <div class="em-body">
+        <input class="subj" id="subj:${r.key}" value="${esc(t.subject)}">
+        <textarea id="body:${r.key}">${esc(t.body)}</textarea>
+        <div class="em-foot">${controls}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function render(){
+  const sorted=WINTER_EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
+  document.getElementById("app").innerHTML=`<div class="grid-cards">${sorted.map(e=>{
+    const place=e.city||e.state;
+    const open=OPEN_CARDS.has(e.id);
+    const dateBadge = e.giftOnly ? `<span class="badge gift">Gift only</span>` : (e.date ? `<span class="badge confirmed">Date confirmed</span>` : `<span class="badge tbd">Date TBD</span>`);
+    const ac=audienceCount(e.label);
+    const rosterBadge = ac==null ? `<span class="badge noroster">No list</span>` : "";
+    const need=needsApprovalCount(e);
+    const needBadge = need>0 ? `<span class="badge needs">${need} need${need===1?'s':''} approval</span>` : "";
+
+    const pl=getPL(e.id), dir=getDirector(e.id);
+    const dateFields = e.giftOnly ? "" : `<div class="grid2">
         <div class="f"><label>Date</label><input type="date" id="edate:${e.id}" value="${e.date||""}" onchange="saveDateTime('${e.id}')"></div>
         <div class="f"><label>Start / End time</label><div style="display:flex;gap:6px">
           <input type="time" id="etstart:${e.id}" value="${e.startISO?e.startISO.split('T')[1].slice(0,5):""}" onchange="saveDateTime('${e.id}')">
@@ -207,20 +292,36 @@ function render(){
         <div class="f"><label>Venue</label><input id="evenue:${e.id}" value="${esc(e.venue||"")}" placeholder="Venue name" onchange="saveTextField('${e.id}','venue')"></div>
         <div class="f"><label>Address</label><input id="eaddress:${e.id}" value="${esc(e.address||"")}" placeholder="Street address" onchange="saveTextField('${e.id}','address')"></div>
         <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
-      </div>`}
-      <div class="grid full">
-        <div class="f"><label>BCC (comma-separated emails, optional)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
+      </div>`;
+
+    const body = !open ? "" : `<div class="acc-body">
+      ${dateFields}
+      <div class="grid2">
+        <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
+        <div class="f"><label>Party Lead email</label><input id="plemail:${e.id}" type="email" value="${esc(pl.email||"")}" placeholder="name@abtaba.com" onchange="savePL('${e.id}')"></div>
+        <div class="f"><label>State director (BCC)</label><input id="direml:${e.id}" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector('${e.id}')"></div>
+        <div class="f"><label>Other BCC (comma-separated)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
       </div>
       <div class="row-upload">
-        <div class="info">📋 ${rosterInfo}</div>
+        <div class="info">📋 ${ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet"}</div>
         <button class="btn" onclick="uploadList('${e.id}')">⬆ Upload list</button>
       </div>
       <div class="row-upload">
-        <div class="info" style="display:flex;align-items:center;gap:10px">🖼️ ${flyerInfo}</div>
+        <div class="info">${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" class="flyer-thumb"> Flyer uploaded`:"No flyer uploaded yet"}</div>
         <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
       </div>
+      <div class="emails-label">Emails</div>
+      ${emailSection(e)}
     </div>`;
-  }).join("");
+
+    return `<div class="mini${open?' open':''}">
+      <div class="mini-head" onclick="toggleCard('${e.id}')">
+        <div class="mini-title">${esc(place)}<span class="chev">▶</span></div>
+        <div class="badges">${dateBadge}${rosterBadge}${needBadge}</div>
+      </div>
+      ${body}
+    </div>`;
+  }).join("")}</div>`;
 }
 load();
 </script>
