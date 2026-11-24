@@ -186,7 +186,6 @@
       <nav class="nav">
         <a href="./winter.html" class="active">❄️ Winter Holiday Parties</a>
         <a href="./admin.html">Admin</a>
-        <a href="./events.html">Event Command Center</a>
         <div class="navdrop">
           <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:transparent;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
           <div class="navdrop-menu" id="rsvpMenu">
@@ -462,29 +461,22 @@ function renderCal(){
   }
   document.getElementById("weeks").innerHTML=html;
 }
-function eventPills(e){
-  if(e.giftOnly){ const st=getStatus(e.id,"gift"); return `<span class="pill ${st==='sent'?'sent':st==='draft'?'needs':'sched'}">${st==='sent'?'Sent':st==='draft'?'Not scheduled':'Scheduled'}</span>`; }
-  const rs=winterReminders(e);
-  return rs.map(r=>{ const st=getStatus(e.id,r.key); if(st==="skipped") return ""; const cls=st==="sent"?"sent":st==="draft"?"needs":"sched"; return `<span class="pill ${cls}">${r.abbr}: ${st==="sent"?"Sent":st==="draft"?"Needs approval":"Scheduled"}</span>`; }).join("");
-}
 function renderEventsView(){
+  // Kept intentionally simple -- just the date and RSVP count, viewable by anyone.
+  // All editing (venue, PL, BCC, flyer, emails, budget) lives on the Admin page now.
   const sorted=WINTER_EVENTS.slice().sort((a,b)=>(a.state||"").localeCompare(b.state||""));
   document.getElementById("eventsView").innerHTML=sorted.map(e=>{
     const place=e.city||e.state;
-    const dateHtml = e.date ? (()=>{ const d=ymd(e.date); return `<div class="db"><div class="mo">${MO[d.getMonth()]}</div><div class="day">${d.getDate()}</div><div class="wd">${WD[d.getDay()]}</div></div>`; })() : `<div class="db tbd">TBD</div>`;
+    const dateHtml = e.giftOnly ? `<div class="db tbd">Gift only</div>` : e.date ? (()=>{ const d=ymd(e.date); return `<div class="db"><div class="mo">${MO[d.getMonth()]}</div><div class="day">${d.getDate()}</div><div class="wd">${WD[d.getDay()]}</div></div>`; })() : `<div class="db tbd">TBD</div>`;
     const rc=e.giftOnly?null:rsvpCount(e.id);
-    const budgetTxt = e.budgetAllotted!=null ? (money(e.budgetSpent||0)||"$0")+" / "+money(e.budgetAllotted) : "";
-    const ready=READY_TO_SEND.has(e.id);
-    return `<div class="card${ready?' ready':''}" onclick="openModal('${e.id}')">
+    return `<div class="card" style="cursor:default">
       ${dateHtml}
       <div class="ci">
         <div class="t">${esc(place)}${e.giftOnly?' <span style="font-size:12px;color:var(--amber)">(gift only, no party)</span>':''}</div>
-        <div class="s">${e.venue?esc(e.venue):"Venue TBD"}${e.time?" · "+esc(e.time):""}</div>
+        <div class="s">${e.venue?esc(e.venue):(e.giftOnly?"No party — gift mailing":"Venue TBD")}${e.time?" · "+esc(e.time):""}</div>
       </div>
       <div class="cside">
-        ${rc?`<b>${rc.total}</b>${e.est?" of <b>"+e.est+"</b> expected":""} RSVP'd (${rc.yes} + ${rc.plusOnes} guests)`:""}
-        ${budgetTxt?`<span>${budgetTxt}</span>`:""}
-        <div class="pillset">${ready?'<span class="pill ready">✓ Ready to send</span>':''}${eventPills(e)}</div>
+        ${rc?`<b>${rc.total}</b>${e.est?" of <b>"+e.est+"</b> expected":""} RSVP'd`:""}
       </div>
     </div>`;
   }).join("");

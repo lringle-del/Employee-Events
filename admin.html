@@ -98,7 +98,6 @@
       <nav class="nav">
         <a href="./winter.html">❄️ Winter Holiday Parties</a>
         <a href="./admin.html" class="active">Admin</a>
-        <a href="./events.html">Event Command Center</a>
       </nav>
     </div>
     <h1>Admin</h1>
@@ -150,6 +149,10 @@ async function saveBcc(id){
   const raw=document.getElementById("ebcc:"+id).value;
   const list=raw.split(",").map(s=>s.trim()).filter(Boolean);
   if(await patchEvent(id,{extraBcc:list})) toast("Saved ✓");
+}
+async function saveBudget(id,field,val){
+  const n=val===""?null:Number(val);
+  if(await patchEvent(id,{[field]:n})){ render(); toast("Saved ✓"); }
 }
 async function savePL(id){
   const name=document.getElementById("plname:"+id).value, email=document.getElementById("plemail:"+id).value.trim();
@@ -303,6 +306,10 @@ function render(){
         <div class="f"><label>Party Lead email</label><input id="plemail:${e.id}" type="email" value="${esc(pl.email||"")}" placeholder="name@abtaba.com" onchange="savePL('${e.id}')"></div>
         <div class="f"><label>State director (BCC)</label><input id="direml:${e.id}" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector('${e.id}')"></div>
         <div class="f"><label>Other BCC (comma-separated)</label><input id="ebcc:${e.id}" value="${esc((e.extraBcc||[]).join(', '))}" placeholder="name@abtaba.com, name2@abtaba.com" onchange="saveBcc('${e.id}')"></div>
+      </div>
+      <div class="grid2">
+        <div class="f"><label>Budget allotted</label><input type="number" value="${e.budgetAllotted??''}" placeholder="0" onchange="saveBudget('${e.id}','budgetAllotted',this.value)"></div>
+        <div class="f"><label>Budget spent</label><input type="number" value="${e.budgetSpent??0}" placeholder="0" onchange="saveBudget('${e.id}','budgetSpent',this.value)"></div>
       </div>
       <div class="row-upload">
         <div class="info">📋 ${ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet"}</div>
