@@ -342,7 +342,16 @@ async function load(){
   renderTemplatesBox();
   renderFilterTabs();
   renderTable();
-  if(openId) renderModal();
+  openFromUrl();
+}
+// Deep link from a preview email's "Fix it here" link: /admin.html?open=w-omaha&key=invite
+function openFromUrl(){
+  const p=new URLSearchParams(location.search);
+  const id=p.get("open");
+  if(!id || !WINTER_EVENTS.find(x=>x.id===id)) return;
+  openLocation(id);
+  if(p.get("key")) modalTab="emails";
+  renderModal();
 }
 function refreshAll(){ renderFilterTabs(); renderTable(); if(openId) renderModal(); }
 

@@ -51,6 +51,10 @@ export default async function handler(req, res) {
       const token = tokenFor(id);
       const link = origin + '/api/approve-send?id=' + encodeURIComponent(id) + '&t=' + token;
       const replyTo = `approve.${id.replace(':', '.')}.${token}@${replyDomain}`;
+      // Winter jobs can be fixed straight in the Admin page -- deep-link to that
+      // location so a spotted mistake (wrong date, typo, etc.) can actually be
+      // corrected, not just reported.
+      const fixLink = isWinter(j) ? origin + '/admin.html?open=' + encodeURIComponent(j.eventId) + '&key=' + encodeURIComponent(j.key) : null;
       if (dry) { previews.push({ id, to: who, sendOn: j.sendOn }); continue; }
       try {
         await resend.emails.send({
@@ -59,12 +63,14 @@ export default async function handler(req, res) {
           text: `This reminder is scheduled to send on ${j.sendOn} to ${who}.\n\n`
             + `TO APPROVE, either tap this link:\n${link}\n\n`
             + `...or just reply to this email with the word "Approved".\n\n`
+            + (fixLink ? `See a mistake? Fix it here, then approve it from there:\n${fixLink}\n\n` : '')
             + `If you do nothing, it will NOT send.\n\n`
             + `----- EMAIL PREVIEW -----\nSubject: ${j.subject}\n\n${j.body}`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:580px;color:#1c458c">`
             + `<p style="font-size:15px;color:#333">This reminder is scheduled to send on <b>${escH(j.sendOn)}</b> to <b>${escH(who)}</b>. Review it below, then approve to release it.</p>`
             + `<p style="margin:22px 0"><a href="${link}" style="display:inline-block;background:#2f9e6f;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:17px">✅ Approve &amp; send</a></p>`
             + `<p style="color:#333;font-size:14px">...or just <b>reply to this email with the word "Approved"</b>.</p>`
+            + (fixLink ? `<p style="margin:16px 0"><a href="${fixLink}" style="display:inline-block;background:#fff;color:#1c458c;text-decoration:none;padding:10px 20px;border-radius:9px;font-weight:700;font-size:14px;border:1px solid #c98a1a">✏️ See a mistake? Fix it here</a></p>` : '')
             + `<p style="color:#888;font-size:13px">If you don't approve, this reminder will <b>not</b> be sent.</p>`
             + `<hr style="border:none;border-top:1px solid #e3d6bd;margin:20px 0">`
             + `<p style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5f6b7a;font-weight:700">Preview</p>`
