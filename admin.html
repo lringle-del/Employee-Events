@@ -243,6 +243,7 @@ let FILTER = "all";
 /* ===== sign-in gate ===== */
 function enterApp(email){
   ADMIN_EMAIL=email;
+  window.SHOW_TEST_LOCATION = (email===OWNER_EMAIL);
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("siteHeader").classList.remove("hidden");
   document.getElementById("shell").classList.remove("hidden");
