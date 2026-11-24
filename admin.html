@@ -358,24 +358,7 @@ function openFromUrl(){
 }
 function refreshAll(){ renderFilterTabs(); renderTable(); if(openId) renderModal(); }
 
-/* ===== email wording: per-location Save / Save-for-all, sample send ===== */
-async function applyToAll(eventId,key,scope){
-  const e=WINTER_EVENTS.find(x=>x.id===eventId);
-  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  const name=winterReminders(e).find(x=>x.key===key).name;
-  const msg = scope==='one'
-    ? `Save this wording for ${e.city||e.state}'s "${name}" email only?`
-    : `Apply this wording to every location's "${name}" email?\n\nThis updates the default text for every location that hasn't been approved yet. Already-approved or sent emails are not changed.`;
-  if(!confirm(msg)) return;
-  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
-  try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body,scope})});
-    const j=await res.json().catch(()=>({}));
-    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; refreshAll(); renderTemplatesBox(); toast(scope==='one'?"✓ Saved.":"✓ Applied to all locations."); }
-    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
-    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
-  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
-}
+/* ===== email wording: global template editor (per-location editing uses saveAndApprove above) ===== */
 const TEMPLATE_KINDS=[
   {key:'invite',kind:'att',name:'Invite + RSVP'},
   {key:'nudge',kind:'att',name:"RSVP nudge (to people who haven't answered)"},
@@ -429,18 +412,28 @@ async function sendSample(eventId,key){
 // (so it has frozen text in schedule.json, disconnected from the live template),
 // save the correction directly onto that job and fire a fresh approval preview
 // right away instead of waiting for the next day's cron run.
-async function editAndRepreview(eventId,key){
+// The one button for any email he edits, draft or already-scheduled: save the
+// text and always route the actual send decision through a fresh approval
+// email in his inbox -- the dashboard itself never releases anything directly.
+async function saveAndApprove(eventId,key){
+  const e=WINTER_EVENTS.find(x=>x.id===eventId);
+  const r=winterReminders(e).find(x=>x.key===key);
   const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  if(!confirm(`Save this fix and send a fresh approval email right away?`)) return;
+  if(!confirm(`Save this and send it for approval?\n\n"${subj}"`)) return;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   toast("Saving…");
   try{
+    if(getStatus(eventId,key)==="draft"){
+      const job=buildJob(e,r); // reads the edited subject/body straight from the DOM
+      const res0=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId+":"+key,action:"approve",job})});
+      if(!res0.ok){ const j0=await res0.json().catch(()=>({})); toast("Couldn't save: "+(j0.error||("HTTP "+res0.status))); return; }
+    }
     const res=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId+":"+key,action:"editAndRepreview",subject:subj,body})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){
       const jb=SERVER_JOBS[eventId+":"+key]||{}; jb.status="approved"; jb.okToSend=false; jb.previewSentAt=j.previewSent?new Date().toISOString():null; SERVER_JOBS[eventId+":"+key]=jb;
       refreshAll();
-      toast(j.previewSent ? "✓ Saved — a new approval email is on its way." : "✓ Saved. (The preview email failed to send right now, but it'll go out with the next daily check.)");
+      toast(j.previewSent ? "✓ Sent! Please check your inbox and approve the email there to send it out." : "✓ Saved. (The approval email failed to send right now, but it'll go out with the next daily check.)");
     }else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
@@ -595,21 +588,17 @@ function emailSection(e){
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att7"||r.key==="att1")&&dir?(" · bcc "+esc(dir)):""));
-    const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','one')" title="Save this wording for ${esc(e.city||e.state)} only">💾 Save</button><button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','all')" title="Use this wording as the default for every location's ${r.name}">🌍 Save for all locations</button>`;
     const sampleBtn=`<button class="btn ghost" onclick="sendSample('${e.id}','${r.key}')" title="Email yourself a copy of this exact text">📧 Send me a sample</button>`;
     const flagBtn=`<button class="btn ghost" onclick="flagForOwner('${e.id}','${r.key}')" title="Not sure how to fix it yourself? Let Liba know instead">🚩 Flag for Liba</button>`;
+    const saveApproveBtn=`<button class="btn primary" onclick="saveAndApprove('${e.id}','${r.key}')" title="Saves your edits and sends an approval email to your inbox -- nothing goes out until that's approved">💾 Save &amp; Approve to Send</button>`;
     let controls;
     if(status==="draft"){
-      controls=`<button class="btn primary" onclick="approveFor('${e.id}','${r.key}')">✓ Approve &amp; schedule</button>
-        ${applyBtn}${sampleBtn}${flagBtn}
-        <button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button>
+      controls=`${saveApproveBtn}${sampleBtn}${flagBtn}
         <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
         <span class="foot-note">Not scheduled</span>`;
     }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
-      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
-      const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
-      const fixBtn = `<button class="btn ghost" onclick="editAndRepreview('${e.id}','${r.key}')" title="Save this fix and send a fresh approval email right away">✏️ Save &amp; re-send for approval</button>`;
-      controls=`${approveBtn}${fixBtn}${applyBtn}${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it in your inbox" : "✓ Scheduled — approve it in your inbox to release it.";
+      controls=`${saveApproveBtn}${sampleBtn}${flagBtn}<button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
       controls=`${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{
