@@ -233,61 +233,59 @@ async function load(){
   renderTemplatesBox();
   render();
 }
-async function applyToAll(eventId,key){
+async function applyToAll(eventId,key,scope){
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
   const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  if(!confirm(`Apply this wording to every location's "${winterReminders(e).find(x=>x.key===key).name}" email?\n\nThis updates the default text for every location that hasn't been approved yet. Already-approved or sent emails are not changed.`)) return;
+  const name=winterReminders(e).find(x=>x.key===key).name;
+  const msg = scope==='one'
+    ? `Save this wording for ${e.city||e.state}'s "${name}" email only?`
+    : `Apply this wording to every location's "${name}" email?\n\nThis updates the default text for every location that hasn't been approved yet. Already-approved or sent emails are not changed.`;
+  if(!confirm(msg)) return;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body})});
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body,scope})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast("✓ Applied to all locations."); }
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast(scope==='one'?"✓ Saved.":"✓ Applied to all locations."); }
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
-    else toast("Couldn't apply: "+(j.error||("HTTP "+res.status)));
+    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
 
 const TEMPLATE_KINDS=[
   {key:'invite',kind:'att',name:'Invite + RSVP'},
   {key:'nudge',kind:'att',name:"RSVP nudge (to people who haven't answered)"},
-  {key:'att3',kind:'att',name:'Attendee reminder — 3 days before'},
-  {key:'att0',kind:'att',name:'Attendee reminder — day of'},
+  {key:'att7',kind:'att',name:'Attendee reminder — 1 week before'},
+  {key:'att1',kind:'att',name:'Attendee reminder — 1 day before'},
   {key:'pl3',kind:'pl',name:'Party Lead reminder — 3 days before'},
-  {key:'gift',kind:'gift',name:'Gift-only notice'},
 ];
-function pickRepEvent(tk){
-  if(tk.key==='gift') return WINTER_EVENTS.find(e=>e.giftOnly);
-  return WINTER_EVENTS.find(e=>!e.giftOnly && e.date) || WINTER_EVENTS.find(e=>!e.giftOnly);
-}
 function renderTemplatesBox(){
   const host=document.getElementById("templatesBox");
   if(!host) return;
   const blocks=TEMPLATE_KINDS.map(tk=>{
-    const rep=pickRepEvent(tk);
-    if(!rep) return "";
-    const t=template(rep,{key:tk.key,kind:tk.kind});
+    const t=placeholderTemplate({key:tk.key,kind:tk.kind});
     return `<div class="em">
-      <div class="em-h"><span class="dot ${tk.kind}"></span><span class="name">${esc(tk.name)}</span><span class="to">shown using ${esc(rep.city||rep.state)}'s info as an example</span></div>
+      <div class="em-h"><span class="dot ${tk.kind}"></span><span class="name">${esc(tk.name)}</span></div>
       <div class="em-body">
-        <div class="edit-label">✏️ Edit this wording to update it everywhere, then save below</div>
+        <div class="edit-label">✏️ Edit this wording, then save -- the bracketed placeholders get replaced with each location's own info automatically</div>
         <input class="subj" id="tsubj:${tk.key}" value="${esc(t.subject)}">
         <textarea id="tbody:${tk.key}">${esc(t.body)}</textarea>
-        <div class="em-foot"><button class="btn primary" onclick="saveTemplateFromEditor('${tk.key}','${rep.id}')">💾 Save &amp; apply to all locations</button><span class="foot-note">Only updates drafts that haven't been approved yet</span></div>
+        <div class="em-foot"><button class="btn primary" onclick="saveTemplateFromEditor('${tk.key}')">🌍 Save for all locations</button><span class="foot-note">Only updates drafts that haven't been approved yet</span></div>
       </div>
     </div>`;
   }).join("");
   host.innerHTML=`<div class="access-box">
-    <div class="al">✉️ Email wording (applies to every location)</div>
-    <div class="sub" style="margin-bottom:10px">Edit any email below and save -- it becomes the default text for that email at every location, with each location's own date, venue, and name filled in automatically.</div>
+    <div class="al">✉️ Email wording</div>
+    <div class="sub" style="margin-bottom:10px">Edit any email below and save -- it becomes the default text for that email at every location. (To change the wording for just one location instead, edit it on that location's own card below.)</div>
     ${blocks}
   </div>`;
 }
-async function saveTemplateFromEditor(key,eventId){
+async function saveTemplateFromEditor(key){
   const subj=document.getElementById("tsubj:"+key).value, body=document.getElementById("tbody:"+key).value;
-  if(!confirm(`Save this wording as the default for every location's "${TEMPLATE_KINDS.find(k=>k.key===key).name}" email?\n\nThis updates everywhere that hasn't been approved yet.`)) return;
+  const name=TEMPLATE_KINDS.find(k=>k.key===key).name;
+  if(!confirm(`Save this wording as the default for every location's "${name}" email?\n\nThis updates everywhere that hasn't been approved yet.`)) return;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body})});
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,subject:subj,body,scope:"all"})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast("✓ Saved — applied to all locations."); }
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
@@ -431,8 +429,8 @@ function emailSection(e){
     const status=getStatus(e.id,r.key);
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
-    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
-    const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}')" title="Use this wording as the default for every location's ${r.name}">📋 Apply to all</button>`;
+    const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att7"||r.key==="att1")&&dir?(" · bcc "+esc(dir)):""));
+    const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','one')" title="Save this wording for ${esc(e.city||e.state)} only">💾 Save</button><button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}','all')" title="Use this wording as the default for every location's ${r.name}">🌍 Save for all locations</button>`;
     const sampleBtn=`<button class="btn ghost" onclick="sendSample('${e.id}','${r.key}')" title="Email yourself a copy of this exact text">📧 Send me a sample</button>`;
     let controls;
     if(status==="draft"){
@@ -510,8 +508,8 @@ function render(){
         <div class="info">${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" class="flyer-thumb"> Flyer uploaded`:"No flyer uploaded yet"}</div>
         <button class="btn" onclick="uploadFlyer('${e.id}')">⬆ Upload flyer</button>
       </div>
-      <div class="emails-label">Emails</div>
-      ${emailSection(e)}
+      ${e.giftOnly ? `<div style="font-size:13px;color:var(--muted);margin-top:6px">No automated email for gift-only locations.</div>` : `<div class="emails-label">Emails</div>
+      ${emailSection(e)}`}
     </div>`;
 
     return `<div class="mini${collapsed?' collapsed':''}">

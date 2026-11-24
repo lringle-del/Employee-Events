@@ -86,11 +86,17 @@ export default async function handler(req, res) {
 
     if (body.action === 'saveTemplateOverride') {
       const key = String(body.key || '');
-      const sourceEventId = String(body.sourceEventId || '');
+      const sourceEventId = body.sourceEventId ? String(body.sourceEventId) : null;
       const subject = body.subject, bodyText = body.body;
-      if (!key || !sourceEventId || !subject || !bodyText) return res.status(400).json({ error: 'key, sourceEventId, subject, and body are required.' });
+      const scope = body.scope === 'one' ? 'one' : 'all';
+      if (!key || !subject || !bodyText) return res.status(400).json({ error: 'key, subject, and body are required.' });
+      if (scope === 'one' && !sourceEventId) return res.status(400).json({ error: 'sourceEventId is required to save for a single location.' });
       const overrides = await readJSON(TEMPLATES_KEY, {});
-      overrides[key] = { sourceEventId, subject, body: bodyText };
+      // sourceEventId present -> swap that event's own real values back out for each
+      // target location. Absent (saved from the top editor's placeholder text) ->
+      // template() swaps the literal "[State]"-style placeholders instead.
+      if (scope === 'one') overrides[key + ':' + sourceEventId] = { subject, body: bodyText };
+      else overrides[key] = { sourceEventId, subject, body: bodyText };
       await writeJSON(TEMPLATES_KEY, overrides);
       return res.status(200).json({ ok: true, overrides });
     }
