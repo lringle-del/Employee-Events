@@ -61,21 +61,21 @@ export default async function handler(req, res) {
           from, to: [digestFor(j)], replyTo,
           subject: `Approve to send — ${j.subject}  (sends ${j.sendOn})`,
           text: `This reminder is scheduled to send on ${j.sendOn} to ${who}.\n\n`
-            + `TO APPROVE, either tap this link:\n${link}\n\n`
-            + `...or just reply to this email with the word "Approved".\n\n`
-            + (fixLink ? `See a mistake? Fix it here, then approve it from there:\n${fixLink}\n\n` : '')
-            + `If you do nothing, it will NOT send.\n\n`
-            + `----- EMAIL PREVIEW -----\nSubject: ${j.subject}\n\n${j.body}`,
+            + `----- EMAIL PREVIEW -----\nSubject: ${j.subject}\n\n${j.body}\n----- END PREVIEW -----\n\n`
+            + `✅ APPROVED -- send it: tap this link (or reply "Approved")\n${link}\n\n`
+            + (fixLink ? `✏️ NOT APPROVED -- need to edit: tap this link to fix it in Admin\n${fixLink}\n\n` : '')
+            + `If you do nothing, it will NOT send.`,
           html: `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:580px;color:#1c458c">`
-            + `<p style="font-size:15px;color:#333">This reminder is scheduled to send on <b>${escH(j.sendOn)}</b> to <b>${escH(who)}</b>. Review it below, then approve to release it.</p>`
-            + `<p style="margin:22px 0"><a href="${link}" style="display:inline-block;background:#2f9e6f;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:17px">✅ Approve &amp; send</a></p>`
-            + `<p style="color:#333;font-size:14px">...or just <b>reply to this email with the word "Approved"</b>.</p>`
-            + (fixLink ? `<p style="margin:16px 0"><a href="${fixLink}" style="display:inline-block;background:#fff;color:#1c458c;text-decoration:none;padding:10px 20px;border-radius:9px;font-weight:700;font-size:14px;border:1px solid #c98a1a">✏️ See a mistake? Fix it here</a></p>` : '')
-            + `<p style="color:#888;font-size:13px">If you don't approve, this reminder will <b>not</b> be sent.</p>`
-            + `<hr style="border:none;border-top:1px solid #e3d6bd;margin:20px 0">`
-            + `<p style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5f6b7a;font-weight:700">Preview</p>`
+            + `<p style="font-size:15px;color:#333">This reminder is scheduled to send on <b>${escH(j.sendOn)}</b> to <b>${escH(who)}</b>. Review the preview below, then choose one.</p>`
+            + `<p style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#5f6b7a;font-weight:700;margin-top:22px">Preview</p>`
             + `<p style="font-size:14px;color:#333"><b>Subject:</b> ${escH(j.subject)}</p>`
-            + `<pre style="white-space:pre-wrap;background:#f5f0e5;padding:14px;border-radius:10px;font-family:inherit;font-size:14px;color:#333">${escH(j.body)}</pre></div>`,
+            + `<pre style="white-space:pre-wrap;background:#f5f0e5;padding:14px;border-radius:10px;font-family:inherit;font-size:14px;color:#333">${escH(j.body)}</pre>`
+            + `<hr style="border:none;border-top:1px solid #e3d6bd;margin:22px 0">`
+            + `<table style="width:100%"><tr>`
+            + `<td style="padding-right:8px"><a href="${link}" style="display:block;text-align:center;background:#2f9e6f;color:#fff;text-decoration:none;padding:14px 10px;border-radius:10px;font-weight:700;font-size:15px">✅ Approved — send it</a></td>`
+            + (fixLink ? `<td style="padding-left:8px"><a href="${fixLink}" style="display:block;text-align:center;background:#fff;color:#1c458c;text-decoration:none;padding:14px 10px;border-radius:10px;font-weight:700;font-size:15px;border:1px solid #c98a1a">✏️ Not approved — need to edit</a></td>` : '')
+            + `</tr></table>`
+            + `<p style="color:#888;font-size:13px;margin-top:14px">You can also just reply to this email with the word "Approved". If you do nothing, it will <b>not</b> be sent.</p></div>`,
         });
         j.previewSentAt = new Date().toISOString(); sched[id] = j; await writeJSON(SKEY, sched);
         previews.push({ id, to: who, sendOn: j.sendOn });
