@@ -107,6 +107,7 @@ export default async function handler(req, res) {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return res.status(400).json({ error: 'Invalid JSON body.' }); } }
   const subject = body && body.subject, text = body && body.text;
+  const html = (body && body.html) || undefined;
   const to = cleanList(body && body.to), bcc = cleanList(body && body.bcc);
   const replyTo = (body && body.replyTo) || undefined;
   if (!subject || !text) return res.status(400).json({ error: 'Missing subject or body.' });
@@ -118,12 +119,12 @@ export default async function handler(req, res) {
     if (bcc.length) {
       // Bulk: one message per chunk, recipients hidden in BCC, `to` = the from address.
       for (const group of chunk(bcc, 45)) {
-        const r = await resend.emails.send({ from, to: [from], bcc: group, subject, text, replyTo });
+        const r = await resend.emails.send({ from, to: [from], bcc: group, subject, text, html, replyTo });
         if (r.error) throw new Error(r.error.message || 'Resend error');
         sent += group.length;
       }
     } else {
-      const r = await resend.emails.send({ from, to, subject, text, replyTo });
+      const r = await resend.emails.send({ from, to, subject, text, html, replyTo });
       if (r.error) throw new Error(r.error.message || 'Resend error');
       sent += to.length;
     }
