@@ -109,6 +109,7 @@
       <nav class="nav">
         <a href="./winter.html">❄️ Winter Holiday Parties</a>
         <a href="./admin.html" class="active">Admin</a>
+        <span id="whoami" class="hidden" style="font-size:13px;color:var(--muted);align-self:center;padding:0 4px"></span>
       </nav>
     </div>
     <h1>Admin</h1>
@@ -137,6 +138,21 @@ let COLLAPSED = new Set();
 let ADMIN_EMAIL = null;
 let ADMINS = [];
 
+function enterApp(email){
+  ADMIN_EMAIL=email;
+  document.getElementById("gate").classList.add("hidden");
+  document.getElementById("accessWrap").classList.remove("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  const who=document.getElementById("whoami");
+  who.classList.remove("hidden");
+  who.innerHTML=`Signed in as <b>${esc(email)}</b> · <button class="lnk" onclick="signOut()">Sign out</button>`;
+  load();
+}
+function signOut(){
+  localStorage.removeItem("admin_email");
+  localStorage.removeItem("send_pass");
+  location.reload();
+}
 async function tryGate(){
   const email=document.getElementById("gateEmail").value.trim().toLowerCase();
   const pass=document.getElementById("gatePass").value;
@@ -152,11 +168,7 @@ async function tryGate(){
     if(!j.allowed){ err.textContent="This email doesn't have admin access."; return; }
     localStorage.setItem("send_pass",pass);
     localStorage.setItem("admin_email",email);
-    ADMIN_EMAIL=email;
-    document.getElementById("gate").classList.add("hidden");
-    document.getElementById("accessWrap").classList.remove("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    load();
+    enterApp(email);
   }catch(e){ err.textContent="Couldn't reach the server ("+e.message+")."; }
 }
 async function checkGate(){
@@ -167,11 +179,7 @@ async function checkGate(){
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"checkAdmin",email})});
     const j=await res.json().catch(()=>({}));
     if(!res.ok||!j.allowed){ localStorage.removeItem("admin_email"); localStorage.removeItem("send_pass"); return; }
-    ADMIN_EMAIL=email;
-    document.getElementById("gate").classList.add("hidden");
-    document.getElementById("accessWrap").classList.remove("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    load();
+    enterApp(email);
   }catch{}
 }
 
