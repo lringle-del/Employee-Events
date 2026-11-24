@@ -504,7 +504,7 @@ function renderEventsView(){
 
   document.getElementById("eventsView").innerHTML=`
     <div class="tiles">
-      <div class="tile"><div class="k">Total RSVPs</div><div class="v">${total}</div><div class="sub">registered employees</div></div>
+      <div class="tile"><div class="k">Total RSVPs</div><div class="v">${total}</div><div class="sub">registered employees · +${plus} plus-ones</div></div>
       <div class="tile accent"><div class="k">Est. headcount</div><div class="v">${total+plus}</div><div class="sub">RSVPs + ${plus} plus-ones</div></div>
       <div class="tile"><div class="k">Locations</div><div class="v">${parties.length}</div><div class="sub">${nConfirmed} with a confirmed date</div></div>
       <div class="tile"><div class="k">Top location</div><div class="v" style="font-size:28px">${top&&top.rc.total?esc(top.e.city||top.e.state):"—"}</div><div class="sub">${top?top.rc.total:0} RSVPs</div></div>
