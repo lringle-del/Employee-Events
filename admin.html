@@ -150,8 +150,8 @@ async function tryGate(){
     if(res.status===401){ err.textContent="Incorrect passcode."; return; }
     if(!res.ok){ err.textContent=j.error||"Something went wrong."; return; }
     if(!j.allowed){ err.textContent="This email doesn't have admin access."; return; }
-    sessionStorage.setItem("send_pass",pass);
-    sessionStorage.setItem("admin_email",email);
+    localStorage.setItem("send_pass",pass);
+    localStorage.setItem("admin_email",email);
     ADMIN_EMAIL=email;
     document.getElementById("gate").classList.add("hidden");
     document.getElementById("accessWrap").classList.remove("hidden");
@@ -160,13 +160,13 @@ async function tryGate(){
   }catch(e){ err.textContent="Couldn't reach the server ("+e.message+")."; }
 }
 async function checkGate(){
-  const email=sessionStorage.getItem("admin_email");
-  const pass=sessionStorage.getItem("send_pass");
+  const email=localStorage.getItem("admin_email");
+  const pass=localStorage.getItem("send_pass");
   if(!email||!pass) return;
   try{
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"checkAdmin",email})});
     const j=await res.json().catch(()=>({}));
-    if(!res.ok||!j.allowed){ sessionStorage.removeItem("admin_email"); sessionStorage.removeItem("send_pass"); return; }
+    if(!res.ok||!j.allowed){ localStorage.removeItem("admin_email"); localStorage.removeItem("send_pass"); return; }
     ADMIN_EMAIL=email;
     document.getElementById("gate").classList.add("hidden");
     document.getElementById("accessWrap").classList.remove("hidden");
@@ -178,7 +178,7 @@ async function checkGate(){
 async function loadAdmins(){
   if(ADMIN_EMAIL!==OWNER_EMAIL) return;
   try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"listAdmins",requesterEmail:ADMIN_EMAIL})});
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":localStorage.getItem("send_pass")},body:JSON.stringify({action:"listAdmins",requesterEmail:ADMIN_EMAIL})});
     const j=await res.json().catch(()=>({}));
     if(res.ok) ADMINS=j.admins||[];
   }catch{}
@@ -188,7 +188,7 @@ async function addAdmin(){
   const email=inp.value.trim().toLowerCase();
   if(!email||!email.includes("@")){ toast("Enter a valid email."); return; }
   try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"addAdmin",requesterEmail:ADMIN_EMAIL,email})});
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":localStorage.getItem("send_pass")},body:JSON.stringify({action:"addAdmin",requesterEmail:ADMIN_EMAIL,email})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){ ADMINS=j.admins||[]; inp.value=""; renderAccessBox(); toast("✓ Added "+email); }
     else toast("Couldn't add: "+(j.error||("HTTP "+res.status)));
@@ -197,7 +197,7 @@ async function addAdmin(){
 async function removeAdmin(email){
   if(!confirm("Remove "+email+"'s admin access?")) return;
   try{
-    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":sessionStorage.getItem("send_pass")},body:JSON.stringify({action:"removeAdmin",requesterEmail:ADMIN_EMAIL,email})});
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":localStorage.getItem("send_pass")},body:JSON.stringify({action:"removeAdmin",requesterEmail:ADMIN_EMAIL,email})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){ ADMINS=j.admins||[]; renderAccessBox(); toast("Removed."); }
     else toast("Couldn't remove: "+(j.error||("HTTP "+res.status)));
@@ -231,7 +231,7 @@ async function patchEvent(id, fields){
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id,...fields})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===id); if(i>=0) WINTER_EVENTS[i]=j.event; return true; }
-    if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
   return false;
@@ -301,7 +301,7 @@ function uploadList(eventId){
       const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
       const j=await res.json().catch(()=>({}));
       if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); render(); }
-      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Save failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
   };
@@ -329,7 +329,7 @@ function uploadFlyer(eventId){
       const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
       const j=await res.json().catch(()=>({}));
       if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded."); render(); }
-      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
   };

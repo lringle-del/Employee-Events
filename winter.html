@@ -314,7 +314,7 @@ async function patchEvent(id, fields){
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id,...fields})});
     const j=await res.json().catch(()=>({}));
     if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===id); if(i>=0) WINTER_EVENTS[i]=j.event; return true; }
-    if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
   return false;
@@ -338,7 +338,7 @@ async function saveBudget(id,field,val){
 }
 async function savePL(){
   const name=document.getElementById("plname").value, email=document.getElementById("plemail").value.trim();
-  const pass=sessionStorage.getItem("send_pass");
+  const pass=localStorage.getItem("send_pass");
   SERVER_PLS[openId]={name,email};
   if(pass){ fetch("/api/pl",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:openId,name,email})}).catch(()=>{}); }
 }
@@ -380,7 +380,7 @@ function uploadList(eventId){
       const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
       const j=await res.json().catch(()=>({}));
       if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); openModal(eventId); }
-      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else{ toast("Save failed: "+(j.error||("HTTP "+res.status))); }
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
   };
@@ -408,7 +408,7 @@ function uploadFlyer(eventId){
       const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId,action:"uploadFlyer",imageBase64:base64,contentType:"image/jpeg"})});
       const j=await res.json().catch(()=>({}));
       if(res.ok){ const i=WINTER_EVENTS.findIndex(x=>x.id===eventId); if(i>=0) WINTER_EVENTS[i].flyerUrl=j.flyerUrl; toast("✓ Flyer uploaded — it'll show in the Invite email."); openModal(eventId); }
-      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else toast("Upload failed: "+(j.error||("HTTP "+res.status)));
     }catch(err){ toast("Couldn't process that image ("+err.message+")."); }
   };
@@ -455,7 +455,9 @@ function moveMonth(n){cur.m+=n;if(cur.m<0){cur.m=11;cur.y--;}if(cur.m>11){cur.m=
 function eventsOn(y,m,d){return WINTER_EVENTS.filter(e=>{if(!e.date)return false;const x=ymd(e.date);return x.getFullYear()===y&&x.getMonth()===m&&x.getDate()===d;});}
 function remindersOn(y,m,d){
   const out=[];
-  WINTER_EVENTS.forEach(e=>winterReminders(e).forEach(r=>{const x=r.date;if(x.getFullYear()===y&&x.getMonth()===m&&x.getDate()===d)out.push({e,r});}));
+  // Skip the day-of reminder (att0) -- its date is always the party's own date,
+  // which already shows as the big event chip, so listing it too is redundant.
+  WINTER_EVENTS.forEach(e=>winterReminders(e).forEach(r=>{if(r.key==="att0")return;const x=r.date;if(x.getFullYear()===y&&x.getMonth()===m&&x.getDate()===d)out.push({e,r});}));
   return out;
 }
 function shortCity(e){return (e.city||e.state).split(" ")[0].replace(/,$/,"");}

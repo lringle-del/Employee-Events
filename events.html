@@ -527,7 +527,7 @@ function savePL(reRender){
   const pl={name:document.getElementById("plname").value,email:document.getElementById("plemail").value.trim()};
   store.set("pl:"+openId,pl); SERVER_PLS[openId]=pl;
   if(reRender){
-    const pass=sessionStorage.getItem("send_pass");
+    const pass=localStorage.getItem("send_pass");
     if(pass){ fetch("/api/pl",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({eventId:openId,name:pl.name,email:pl.email})}).catch(()=>{}); }
     openModal(openId);
   }
@@ -590,7 +590,7 @@ async function confirmSend(key){
       const jb=SERVER_JOBS[openId+":"+key]||{}; jb.status="approved"; jb.okToSend=true; if(j.status==="sent") jb.sentAt=new Date().toISOString(); SERVER_JOBS[openId+":"+key]=jb;
       openModal(openId); refreshAll();
       toast(j.sentNow?("✓ Sent to "+who+"."):("✓ Approved — will send "+fmtShort(r.date)+"."));
-    }else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    }else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else{ toast("Couldn't approve: "+(j.error||("HTTP "+res.status))); }
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
@@ -739,7 +739,7 @@ function uploadList(eventId){
       const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:e.label,emails})});
       const j=await res.json().catch(()=>({}));
       if(res.ok){ AUD_COUNTS[e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); openModal(eventId); }
-      else if(res.status===401){ sessionStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+      else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else if(res.status===501){ toast("Server not fully configured: "+(j.error||"")); }
       else{ toast("Save failed: "+(j.error||("HTTP "+res.status))); }
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
