@@ -484,7 +484,7 @@ function renderCal(){
       const st=getStatus(x.e.id,x.r.key);
       if(st==="skipped") return "";
       const cls=st==="sent"?"s-sent":(st==="confirmed"||st==="scheduled")?"s-sched":"s-needs";
-      return `<button class="rem-chip ${cls}" onclick="openModal('${x.e.id}')" title="${esc(x.e.city||x.e.state)} — ${x.r.name}">${esc(shortCity(x.e))} ${x.r.abbr}</button>`;
+      return `<button class="rem-chip ${cls}" onclick="openModal('${x.e.id}','${x.r.key}')" title="${esc(x.e.city||x.e.state)} — ${x.r.name}">${esc(shortCity(x.e))} ${x.r.abbr}</button>`;
     }).join("");
     html+=`<div class="cell ${out?'out':''} ${isToday?'today':''}"><div class="dnum">${dt.getDate()}</div>${evHtml}${remHtml}</div>`;
   }
@@ -621,14 +621,14 @@ function refreshAll(){ renderView(); }
 
 /* ===== modal ===== */
 let openId=null;
-function openModal(id){
+function openModal(id,focusKey){
   openId=id;
   const e=WINTER_EVENTS.find(x=>x.id===id);
   const pl=getPL(id);
   const dir=getDirector(id);
   const rc=e.giftOnly?null:rsvpCount(id);
   const rs=winterReminders(e);
-  const emails=rs.map(r=>{
+  const emailBlocks=rs.map(r=>{
     const t=template(e,r);
     const status=getStatus(id,r.key);
     const st=statusPill(status,r.date);
@@ -649,7 +649,7 @@ function openModal(id){
     }else{
       controls=`<button class="lnk" onclick="restore('${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
-    return `<div class="em">
+    const html=`<div class="em">
       <div class="em-h">
         <span class="dot ${r.kind}"></span>
         <span class="name">${r.name}</span>
@@ -663,7 +663,19 @@ function openModal(id){
         <div class="em-foot">${controls}</div>
       </div>
     </div>`;
-  }).join("");
+    return {key:r.key, html};
+  });
+  let emails;
+  const focus=focusKey?emailBlocks.find(b=>b.key===focusKey):null;
+  if(focus){
+    const rest=emailBlocks.filter(b=>b.key!==focusKey);
+    emails = focus.html + (rest.length
+      ? `<button class="lnk" id="restEmailsBtn" style="display:block;margin:10px 0" onclick="toggleRestEmails()">▾ See the rest of the emails (${rest.length})</button>
+         <div id="restEmails" class="hidden">${rest.map(b=>b.html).join("")}</div>`
+      : "");
+  }else{
+    emails = emailBlocks.map(b=>b.html).join("");
+  }
 
   const dateFields = e.giftOnly ? "" : `
       <div class="mgrid">
@@ -710,6 +722,12 @@ function openModal(id){
   document.body.style.overflow="hidden";
 }
 function closeModal(){document.getElementById("backdrop").classList.remove("show");document.body.style.overflow="";openId=null;}
+function toggleRestEmails(){
+  const box=document.getElementById("restEmails"), btn=document.getElementById("restEmailsBtn");
+  const hidden=box.classList.toggle("hidden");
+  const n=box.children.length;
+  btn.textContent = hidden ? `▾ See the rest of the emails (${n})` : `▴ Hide the rest of the emails`;
+}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
 
 /* init */
