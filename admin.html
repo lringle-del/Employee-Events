@@ -37,6 +37,10 @@
   .mini{background:var(--white);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin:0 0 16px}
   .mini-head{padding:18px 22px 10px;display:flex;flex-direction:column;gap:9px}
   .mini-title{font-family:'Libre Caslon Display',Georgia,serif;font-size:22px;display:flex;align-items:center;gap:8px}
+  .collapse-btn{background:none;border:none;margin-left:auto;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;font-family:inherit;padding:4px 8px;border-radius:8px}
+  .collapse-btn:hover{background:var(--vanilla);color:var(--ink)}
+  .collapse-btn .chev{font-size:11px;transition:transform .15s}
+  .mini.collapsed .collapse-btn .chev{transform:rotate(-90deg)}
   .badges{display:flex;gap:6px;flex-wrap:wrap}
   .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
   .badge.confirmed{background:#dcf2e6;color:#1f7a56}
@@ -109,12 +113,14 @@
 
 <script>
 const T0 = today0();
+let COLLAPSED = new Set();
 
 async function load(){
   await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts()]);
   render();
 }
 function refreshAll(){ render(); }
+function toggleCollapse(id){ if(COLLAPSED.has(id)) COLLAPSED.delete(id); else COLLAPSED.add(id); render(); }
 
 async function patchEvent(id, fields){
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
@@ -276,6 +282,7 @@ function render(){
     const rosterBadge = ac==null ? `<span class="badge noroster">No list</span>` : "";
     const need=needsApprovalCount(e);
     const needBadge = need>0 ? `<span class="badge needs">${need} need${need===1?'s':''} approval</span>` : "";
+    const collapsed=COLLAPSED.has(e.id);
 
     const pl=getPL(e.id), dir=getDirector(e.id);
     const dateFields = e.giftOnly ? "" : `<div class="grid2">
@@ -289,7 +296,7 @@ function render(){
         <div class="f" style="grid-column:1 / -1"><label>Website</label><input id="eurl:${e.id}" value="${esc(e.url||"")}" placeholder="https://..." onchange="saveTextField('${e.id}','url')"></div>
       </div>`;
 
-    const body = `<div class="acc-body">
+    const body = collapsed ? "" : `<div class="acc-body">
       ${dateFields}
       <div class="grid2">
         <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
@@ -309,9 +316,9 @@ function render(){
       ${emailSection(e)}
     </div>`;
 
-    return `<div class="mini">
+    return `<div class="mini${collapsed?' collapsed':''}">
       <div class="mini-head">
-        <div class="mini-title">${esc(place)}</div>
+        <div class="mini-title">${esc(place)}<button class="collapse-btn" onclick="toggleCollapse('${e.id}')"><span class="chev">▾</span> ${collapsed?"Expand":"Collapse"}</button></div>
         <div class="badges">${dateBadge}${rosterBadge}${needBadge}</div>
       </div>
       ${body}
