@@ -18,11 +18,17 @@ const cleanList = (v) => Array.isArray(v)
   ? [...new Set(v.map((x) => String(x || '').trim()).filter((x) => x.includes('@')))]
   : [];
 
+// Every email sent through this endpoint shows this as the sender name -- never
+// a bare address, regardless of what RESEND_FROM is set to in Vercel.
+const FROM_NAME = 'Above and Beyond ABA';
+
 export default async function handler(req, res) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM;
+  const rawFrom = process.env.RESEND_FROM;
   const passcode = process.env.SEND_PASSCODE;
-  if (!apiKey || !from) return res.status(501).json({ error: 'Not configured: set RESEND_API_KEY and RESEND_FROM in Vercel.' });
+  if (!apiKey || !rawFrom) return res.status(501).json({ error: 'Not configured: set RESEND_API_KEY and RESEND_FROM in Vercel.' });
+  const fromAddr = (rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom;
+  const from = `${FROM_NAME} <${fromAddr}>`;
   if (!passcode) return res.status(501).json({ error: 'Not configured: set SEND_PASSCODE in Vercel.' });
 
   const provided = req.headers['x-send-passcode'] || '';

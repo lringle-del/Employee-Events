@@ -31,8 +31,10 @@ export default async function handler(req, res) {
     try {
       const subj = data.subject || '(no subject)';
       const text = data.text || data.body || data['stripped-text'] || '(The message body is stored in Resend → Inbound for 30 days.)';
+      const rawFrom = process.env.RESEND_FROM;
+      const sendFrom = `Above and Beyond ABA <${(rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom}>`;
       await new Resend(process.env.RESEND_API_KEY).emails.send({
-        from: process.env.RESEND_FROM, to: [FORWARD_TO], replyTo: fromRaw || undefined,
+        from: sendFrom, to: [FORWARD_TO], replyTo: fromRaw || undefined,
         subject: 'Fwd (reply): ' + subj,
         text: `A reply came in to: ${toList.join(', ')}\nFrom: ${fromRaw}\n\n${text}`,
       });

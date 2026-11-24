@@ -24,8 +24,10 @@ export default async function handler(req, res) {
   if (!authorized) return res.status(401).json({ error: 'Unauthorized.' });
 
   const dry = (req.query && ('dryRun' in req.query)) || req.headers['x-dry-run'] === '1';
-  const apiKey = process.env.RESEND_API_KEY, from = process.env.RESEND_FROM;
-  if (!apiKey || !from) return res.status(501).json({ error: 'Resend not configured.' });
+  const apiKey = process.env.RESEND_API_KEY, rawFrom = process.env.RESEND_FROM;
+  if (!apiKey || !rawFrom) return res.status(501).json({ error: 'Resend not configured.' });
+  // Always show "Above and Beyond ABA" as the sender name, never a bare address.
+  const from = `Above and Beyond ABA <${(rawFrom.match(/<([^>]+)>/) || [])[1] || rawFrom}>`;
   const resend = new Resend(apiKey);
   const origin = 'https://' + req.headers.host;
 
