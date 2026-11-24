@@ -125,6 +125,7 @@
   <div class="gate-err" id="gateErr"></div>
 </div>
 <div class="wrap hidden" id="accessWrap"><div id="accessBox"></div></div>
+<div class="wrap hidden" id="templatesWrap"><div id="templatesBox"></div></div>
 <div class="wrap hidden" id="app">Loading…</div>
 <div class="toast" id="toast"></div>
 <input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
@@ -142,6 +143,7 @@ function enterApp(email){
   ADMIN_EMAIL=email;
   document.getElementById("gate").classList.add("hidden");
   document.getElementById("accessWrap").classList.remove("hidden");
+  document.getElementById("templatesWrap").classList.remove("hidden");
   document.getElementById("app").classList.remove("hidden");
   const who=document.getElementById("whoami");
   who.classList.remove("hidden");
@@ -228,6 +230,7 @@ function renderAccessBox(){
 async function load(){
   await Promise.all([loadEvents(),loadPLs(),loadDirectors(),loadSchedule(),loadAudiences(),loadRsvpCounts(),loadAdmins(),loadTemplateOverrides()]);
   renderAccessBox();
+  renderTemplatesBox();
   render();
 }
 async function applyToAll(eventId,key){
@@ -238,9 +241,69 @@ async function applyToAll(eventId,key){
   try{
     const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body})});
     const j=await res.json().catch(()=>({}));
-    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); toast("✓ Applied to all locations."); }
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast("✓ Applied to all locations."); }
     else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
     else toast("Couldn't apply: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
+
+const TEMPLATE_KINDS=[
+  {key:'invite',kind:'att',name:'Invite + RSVP'},
+  {key:'nudge',kind:'att',name:"RSVP nudge (to people who haven't answered)"},
+  {key:'att3',kind:'att',name:'Attendee reminder — 3 days before'},
+  {key:'att0',kind:'att',name:'Attendee reminder — day of'},
+  {key:'pl3',kind:'pl',name:'Party Lead reminder — 3 days before'},
+  {key:'gift',kind:'gift',name:'Gift-only notice'},
+];
+function pickRepEvent(tk){
+  if(tk.key==='gift') return WINTER_EVENTS.find(e=>e.giftOnly);
+  return WINTER_EVENTS.find(e=>!e.giftOnly && e.date) || WINTER_EVENTS.find(e=>!e.giftOnly);
+}
+function renderTemplatesBox(){
+  const host=document.getElementById("templatesBox");
+  if(!host) return;
+  const blocks=TEMPLATE_KINDS.map(tk=>{
+    const rep=pickRepEvent(tk);
+    if(!rep) return "";
+    const t=template(rep,{key:tk.key,kind:tk.kind});
+    return `<div class="em">
+      <div class="em-h"><span class="dot ${tk.kind}"></span><span class="name">${esc(tk.name)}</span><span class="to">shown using ${esc(rep.city||rep.state)}'s info as an example</span></div>
+      <div class="em-body">
+        <div class="edit-label">✏️ Edit this wording to update it everywhere, then save below</div>
+        <input class="subj" id="tsubj:${tk.key}" value="${esc(t.subject)}">
+        <textarea id="tbody:${tk.key}">${esc(t.body)}</textarea>
+        <div class="em-foot"><button class="btn primary" onclick="saveTemplateFromEditor('${tk.key}','${rep.id}')">💾 Save &amp; apply to all locations</button><span class="foot-note">Only updates drafts that haven't been approved yet</span></div>
+      </div>
+    </div>`;
+  }).join("");
+  host.innerHTML=`<div class="access-box">
+    <div class="al">✉️ Email wording (applies to every location)</div>
+    <div class="sub" style="margin-bottom:10px">Edit any email below and save -- it becomes the default text for that email at every location, with each location's own date, venue, and name filled in automatically.</div>
+    ${blocks}
+  </div>`;
+}
+async function saveTemplateFromEditor(key,eventId){
+  const subj=document.getElementById("tsubj:"+key).value, body=document.getElementById("tbody:"+key).value;
+  if(!confirm(`Save this wording as the default for every location's "${TEMPLATE_KINDS.find(k=>k.key===key).name}" email?\n\nThis updates everywhere that hasn't been approved yet.`)) return;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  try{
+    const res=await fetch("/api/winter-events",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({action:"saveTemplateOverride",key,sourceEventId:eventId,subject:subj,body})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok){ TEMPLATE_OVERRIDES=j.overrides||{}; render(); renderTemplatesBox(); toast("✓ Saved — applied to all locations."); }
+    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
+  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
+}
+async function sendSample(key){
+  const subj=document.getElementById("subj:"+key).value, body=document.getElementById("body:"+key).value;
+  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
+  toast("Sending sample…");
+  try{
+    const res=await fetch("/api/send",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({subject:"SAMPLE: "+subj,text:body,to:[ADMIN_EMAIL]})});
+    const j=await res.json().catch(()=>({}));
+    if(res.ok) toast("✓ Sample sent to "+ADMIN_EMAIL+".");
+    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
+    else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
 function refreshAll(){ render(); }
