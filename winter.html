@@ -639,15 +639,15 @@ function openModal(id){
     let controls;
     if(status==="draft"){
       controls=`<button class="btn primary" onclick="approve('${r.key}')">✓ Approve &amp; schedule</button>
-        <button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button>
+        <button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button>
         <button class="lnk" onclick="skip('${r.key}')">Ignore</button>
         <span class="foot-note">Not scheduled</span>`;
     }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent to you." : "✓ Scheduled — tap Approve & send to release it.";
       const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSend('${r.key}')">✅ Approve &amp; send</button>` : "";
-      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revoke('${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button><button class="lnk" onclick="revoke('${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
-      controls=`<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+      controls=`<button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{
       controls=`<button class="lnk" onclick="restore('${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
@@ -660,8 +660,8 @@ function openModal(id){
       </div>
       <div class="em-body">
         <div class="edit-label">✏️ Edit the text below if you'd like to change the wording</div>
-        <input class="subj" id="subj:${r.key}" value="${esc(t.subject)}">
-        <textarea id="body:${r.key}">${esc(t.body)}</textarea>
+        <input class="subj" id="subj:${id}:${r.key}" value="${esc(t.subject)}">
+        <textarea id="body:${id}:${r.key}">${esc(t.body)}</textarea>
         <div class="em-foot">${controls}</div>
       </div>
     </div>`;

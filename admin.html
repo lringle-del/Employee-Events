@@ -235,7 +235,7 @@ async function load(){
 }
 async function applyToAll(eventId,key){
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
-  const subj=document.getElementById("subj:"+key).value, body=document.getElementById("body:"+key).value;
+  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
   if(!confirm(`Apply this wording to every location's "${winterReminders(e).find(x=>x.key===key).name}" email?\n\nThis updates the default text for every location that hasn't been approved yet. Already-approved or sent emails are not changed.`)) return;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   try{
@@ -294,8 +294,8 @@ async function saveTemplateFromEditor(key,eventId){
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
-async function sendSample(key){
-  const subj=document.getElementById("subj:"+key).value, body=document.getElementById("body:"+key).value;
+async function sendSample(eventId,key){
+  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
   toast("Sending sample…");
   try{
@@ -433,19 +433,20 @@ function emailSection(e){
     const ac=audienceCount(e.label);
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att3"||r.key==="att0")&&dir?(" · bcc "+esc(dir)):""));
     const applyBtn=`<button class="btn ghost" onclick="applyToAll('${e.id}','${r.key}')" title="Use this wording as the default for every location's ${r.name}">📋 Apply to all</button>`;
+    const sampleBtn=`<button class="btn ghost" onclick="sendSample('${e.id}','${r.key}')" title="Email yourself a copy of this exact text">📧 Send me a sample</button>`;
     let controls;
     if(status==="draft"){
       controls=`<button class="btn primary" onclick="approveFor('${e.id}','${r.key}')">✓ Approve &amp; schedule</button>
-        ${applyBtn}
-        <button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button>
+        ${applyBtn}${sampleBtn}
+        <button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button>
         <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
         <span class="foot-note">Not scheduled</span>`;
     }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it" : "✓ Scheduled — tap Approve & send to release it.";
       const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSendFor('${e.id}','${r.key}')">✅ Approve &amp; send</button>` : "";
-      controls=`${approveBtn}${applyBtn}<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
+      controls=`${approveBtn}${applyBtn}${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
-      controls=`<button class="btn ghost" onclick="copyMail('${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+      controls=`${sampleBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
     }else{
       controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
@@ -458,8 +459,8 @@ function emailSection(e){
       </div>
       <div class="em-body">
         <div class="edit-label">✏️ Edit the text below if you'd like to change the wording</div>
-        <input class="subj" id="subj:${r.key}" value="${esc(t.subject)}">
-        <textarea id="body:${r.key}">${esc(t.body)}</textarea>
+        <input class="subj" id="subj:${e.id}:${r.key}" value="${esc(t.subject)}">
+        <textarea id="body:${e.id}:${r.key}">${esc(t.body)}</textarea>
         <div class="em-foot">${controls}</div>
       </div>
     </div>`;
