@@ -299,14 +299,6 @@ let curView = "events";
    nudgeLeft, getStatus/statusPill, winterReminders/template/buildJob, and copyMail all
    now come from /lib/winter-shared.js so admin.html can share the exact same logic. */
 
-/* Thin wrappers: winter.html's modal buttons call these with no eventId arg (they
-   operate on whichever event's modal is currently open), then re-render that modal. */
-async function approve(key){ await approveFor(openId,key); openModal(openId); }
-async function confirmSend(key){ await confirmSendFor(openId,key); openModal(openId); }
-async function revoke(key){ await revokeFor(openId,key); openModal(openId); }
-async function skip(key){ await skipFor(openId,key); openModal(openId); }
-async function restore(key){ await restoreFor(openId,key); openModal(openId); }
-
 /* ===== event data editing (no code deploy needed) ===== */
 async function patchEvent(id, fields){
   const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return false; }
@@ -632,7 +624,7 @@ function renderRsvpList(){
     }).join("")+`</tbody></table>`;
 }
 function renderView(){ if(curView==="events"){ renderEventsView(); renderRsvpList(); } else if(curView==="calendar"){ renderCal(); renderRsvpList(); } else renderBudgetView(); }
-function refreshAll(){ renderView(); }
+function refreshAll(){ renderView(); if(openId) openModal(openId); }
 
 /* ===== modal ===== */
 let openId=null;
@@ -649,21 +641,7 @@ function openModal(id,focusKey){
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att7"||r.key==="att1")&&dir?(" · bcc "+esc(dir)):""));
-    let controls;
-    if(status==="draft"){
-      controls=`<button class="btn primary" onclick="approve('${r.key}')">✓ Approve &amp; schedule</button>
-        <button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button>
-        <button class="lnk" onclick="skip('${r.key}')">Ignore</button>
-        <span class="foot-note">Not scheduled</span>`;
-    }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
-      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent to you." : "✓ Scheduled — tap Approve & send to release it.";
-      const approveBtn = status!=="confirmed" ? `<button class="btn primary" onclick="confirmSend('${r.key}')">✅ Approve &amp; send</button>` : "";
-      controls=`${approveBtn}<button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button><button class="lnk" onclick="revoke('${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
-    }else if(status==="sent"){
-      controls=`<button class="btn ghost" onclick="copyMail('${id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
-    }else{
-      controls=`<button class="lnk" onclick="restore('${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
-    }
+    const controls=emailControls(e,r,status);
     const html=`<div class="em">
       <div class="em-h">
         <span class="dot ${r.kind}"></span>

@@ -397,71 +397,8 @@ async function saveTemplateFromEditor(key){
     else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
-async function sendSample(eventId,key){
-  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
-  toast("Sending sample…");
-  try{
-    const res=await fetch("/api/send",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({subject:"SAMPLE: "+subj,text:body,to:[ADMIN_EMAIL]})});
-    const j=await res.json().catch(()=>({}));
-    if(res.ok) toast("✓ Sample sent to "+ADMIN_EMAIL+".");
-    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
-    else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
-  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
-}
-// "Not approved -- need to edit": for an email that's already scheduled/approved
-// (so it has frozen text in schedule.json, disconnected from the live template),
-// save the correction directly onto that job and fire a fresh approval preview
-// right away instead of waiting for the next day's cron run.
-// The one button for any email he edits, draft or already-scheduled: save the
-// text and always route the actual send decision through a fresh approval
-// email in his inbox -- the dashboard itself never releases anything directly.
-async function saveAndApprove(eventId,key){
-  const e=WINTER_EVENTS.find(x=>x.id===eventId);
-  const r=winterReminders(e).find(x=>x.key===key);
-  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  if(!confirm(`Save this and send it for approval?\n\n"${subj}"`)) return;
-  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
-  toast("Saving…");
-  try{
-    if(getStatus(eventId,key)==="draft"){
-      const job=buildJob(e,r); // reads the edited subject/body straight from the DOM
-      const res0=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId+":"+key,action:"approve",job})});
-      if(!res0.ok){ const j0=await res0.json().catch(()=>({})); toast("Couldn't save: "+(j0.error||("HTTP "+res0.status))); return; }
-    }
-    const res=await fetch("/api/schedule",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({id:eventId+":"+key,action:"editAndRepreview",subject:subj,body})});
-    const j=await res.json().catch(()=>({}));
-    if(res.ok){
-      const jb=SERVER_JOBS[eventId+":"+key]||{}; jb.status="approved"; jb.okToSend=false; jb.previewSentAt=j.previewSent?new Date().toISOString():null; SERVER_JOBS[eventId+":"+key]=jb;
-      refreshAll();
-      toast(j.previewSent ? "✓ Sent! Please check your inbox and approve the email there to send it out." : "✓ Saved. (The approval email failed to send right now, but it'll go out with the next daily check.)");
-    }else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
-    else toast("Couldn't save: "+(j.error||("HTTP "+res.status)));
-  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
-}
-// For when he's not sure how to fix it himself (e.g. a rendering problem on his end,
-// not a wording mistake he can retype) -- just describe the issue and hand it to the
-// owner instead of editing it.
-async function flagForOwner(eventId,key){
-  const e=WINTER_EVENTS.find(x=>x.id===eventId);
-  const name=winterReminders(e).find(x=>x.key===key).name;
-  const note=prompt(`What's wrong with "${name}"? (e.g. "the emojis show up as question marks")`);
-  if(note===null) return;
-  const subj=document.getElementById("subj:"+eventId+":"+key).value, body=document.getElementById("body:"+eventId+":"+key).value;
-  const pass=getSendPass(); if(!pass){ toast("Passcode needed."); return; }
-  toast("Sending…");
-  try{
-    const res=await fetch("/api/send",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({
-      subject:`⚠ ${ADMIN_EMAIL} flagged an issue: ${e.city||e.state} — ${name}`,
-      text:(note?`What's wrong: ${note}\n\n`:"")+`Location: ${e.city||e.state}\n\n----- CURRENT TEXT -----\nSubject: ${subj}\n\n${body}`,
-      to:["lringle@abtaba.com"]
-    })});
-    const j=await res.json().catch(()=>({}));
-    if(res.ok) toast("✓ Sent to Liba — she'll take it from here.");
-    else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
-    else toast("Couldn't send: "+(j.error||("HTTP "+res.status)));
-  }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
-}
+// sendSample/saveAndApprove/flagForOwner now come from /lib/winter-shared.js, shared
+// with winter.html's calendar modal so both pages behave identically.
 
 /* ===== event field editing (same backend calls as before) ===== */
 async function patchEvent(id, fields){
@@ -613,25 +550,7 @@ function emailSection(e){
     const st=statusPill(status,r.date);
     const ac=audienceCount(e.label);
     const toDetail = r.kind==="pl" ? (pl.email?esc(pl.email):'<span style="color:var(--amber)">assign a PL email above</span>')+(dir?(" · bcc "+esc(dir)):"") : ((r.onlyNonResponders?("about "+nudgeLeft(e)+" who haven't answered yet"):((ac!=null?ac:0)+" recipients"))+((r.key==="att7"||r.key==="att1")&&dir?(" · bcc "+esc(dir)):""));
-    const sampleBtn=`<button class="btn ghost" onclick="sendSample('${e.id}','${r.key}')" title="Email yourself a copy of this exact text">📧 Send me a sample</button>`;
-    const flagBtn=`<button class="btn ghost" onclick="flagForOwner('${e.id}','${r.key}')" title="Not sure how to fix it yourself? Let Liba know instead">🚩 Flag for Liba</button>`;
-    const saveApproveBtn=`<button class="btn primary" onclick="saveAndApprove('${e.id}','${r.key}')" title="Saves your edits and sends an approval email to your inbox -- nothing goes out until that's approved">💾 Save &amp; Approve to Send</button>`;
-    let controls;
-    if(status==="draft"){
-      controls=`${saveApproveBtn}${sampleBtn}${flagBtn}
-        <button class="lnk" onclick="skipFor('${e.id}','${r.key}')">Ignore</button>
-        <span class="foot-note">Not scheduled</span>`;
-    }else if(status==="scheduled"||status==="preview"||status==="confirmed"){
-      const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it in your inbox" : "✓ Scheduled — approve it in your inbox to release it.";
-      controls=`${saveApproveBtn}${sampleBtn}${flagBtn}<button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
-    }else if(status==="sent"){
-      // Resetting a real sent job would erase its "already sent" guard and risk a real
-      // duplicate send -- only ever offered for the zero-recipient Test Location.
-      const resetBtn = e.id==="w-test" ? `<button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Reset (test only)</button>` : "";
-      controls=`${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button>${resetBtn}<span class="foot-note">✓ Sent</span>`;
-    }else{
-      controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
-    }
+    const controls=emailControls(e,r,status);
     const html=`<div class="em">
       <div class="em-h">
         <span class="dot ${r.kind}"></span>
