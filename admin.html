@@ -175,9 +175,9 @@
 <header class="brand hidden" id="siteHeader">
   <div class="wrap">
     <div class="brand-row">
-      <div class="logo"><a href="./winter.html"><img src="/logo.svg" alt="Above &amp; Beyond ABA Therapy" style="height:40px;width:auto;display:block"></a></div>
+      <div class="logo"><a href="./dashboard.html"><img src="/logo.svg" alt="Above &amp; Beyond ABA Therapy" style="height:40px;width:auto;display:block"></a></div>
       <nav class="nav">
-        <a href="./winter.html">🎉 Employee Events</a>
+        <a href="./dashboard.html">🎉 Employee Events</a>
         <a href="./admin.html" class="active">Admin</a>
         <div class="navdrop">
           <button onclick="event.stopPropagation();document.getElementById('rsvpMenu').classList.toggle('show')" style="font-family:inherit;font-size:13.5px;font-weight:700;border:none;background:transparent;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer">RSVPs ▾</button>
@@ -398,7 +398,7 @@ async function saveTemplateFromEditor(key){
   }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
 }
 // sendSample/saveAndApprove/flagForOwner now come from /lib/winter-shared.js, shared
-// with winter.html's calendar modal so both pages behave identically.
+// with dashboard.html's calendar modal so both pages behave identically.
 
 /* ===== event field editing (same backend calls as before) ===== */
 async function patchEvent(id, fields){

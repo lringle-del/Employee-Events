@@ -6,6 +6,6 @@
     "api/cron.js": { "maxDuration": 60 }
   },
   "redirects": [
-    { "source": "/", "destination": "/winter.html" }
+    { "source": "/", "destination": "/dashboard.html" }
   ]
 }
