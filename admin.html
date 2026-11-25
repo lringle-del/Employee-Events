@@ -519,13 +519,17 @@ function extractEmailsFromWorkbook(wb){
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
   const out=new Set(); const rx=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  if(!rows.length) return [];
+  let seen=0;
+  // Case-insensitive: "John@X.com" and "john@x.com" are the same recipient --
+  // without lowercasing first, both would be kept and that person double-emailed.
+  const addIfValid=(v)=>{ const s=String(v||"").trim(); if(rx.test(s)){ seen++; out.add(s.toLowerCase()); } };
+  if(!rows.length) return {emails:[], duplicates:0};
   const header=rows[0].map(h=>String(h).toLowerCase().trim());
   let emailCol=header.indexOf("email");
   if(emailCol<0) emailCol=header.findIndex(h=>h.includes("email")&&!h.includes("additional")&&!h.includes("guardian"));
-  if(emailCol<0){ rows.forEach(r=>r.forEach(c=>{const v=String(c).trim(); if(rx.test(v))out.add(v);})); return [...out]; }
-  for(let i=1;i<rows.length;i++){ const em=String(rows[i][emailCol]||"").trim(); if(rx.test(em)) out.add(em); }
-  return [...out];
+  if(emailCol<0){ rows.forEach(r=>r.forEach(c=>addIfValid(c))); }
+  else{ for(let i=1;i<rows.length;i++) addIfValid(rows[i][emailCol]); }
+  return {emails:[...out], duplicates: seen-out.size};
 }
 function uploadList(eventId){
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
@@ -534,11 +538,12 @@ function uploadList(eventId){
   inp.onchange=async()=>{
     const file=inp.files[0]; if(!file) return;
     toast("Reading "+file.name+"…");
-    let emails;
-    try{ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); emails=extractEmailsFromWorkbook(wb); }
+    let emails, duplicates;
+    try{ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); ({emails,duplicates}=extractEmailsFromWorkbook(wb)); }
     catch(err){ toast("Couldn't read that file ("+err.message+")."); return; }
     if(!emails.length){ toast("No email addresses found in that file."); return; }
-    if(!confirm(`Save ${emails.length} emails as the ${e.city||e.state} winter roster?`)) return;
+    const dupNote = duplicates>0 ? `\n\n(Found and removed ${duplicates} duplicate${duplicates===1?'':'s'} -- each person is only in the list once.)` : "\n\n(No duplicates found.)";
+    if(!confirm(`Save ${emails.length} emails as the ${e.city||e.state} winter roster?${dupNote}`)) return;
     const pass=getSendPass(); if(!pass){ toast("Passcode needed to save the list."); return; }
     toast("Saving "+emails.length+" emails…");
     try{

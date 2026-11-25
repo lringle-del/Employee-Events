@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const emails = body && body.emails;
     if (!label || !Array.isArray(emails)) return res.status(400).json({ error: 'label and emails[] are required.' });
 
-    const clean = [...new Set(emails.map((e) => String(e || '').trim()).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
+    const clean = [...new Set(emails.map((e) => String(e || '').trim().toLowerCase()).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
     const all = await readJSON(KEY, {});
     if (clean.length === 0 && body.allowEmpty !== true) return res.status(400).json({ error: 'No valid emails found in the list.' });
     all[label] = clean;
