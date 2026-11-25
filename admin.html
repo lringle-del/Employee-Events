@@ -228,7 +228,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<input type="file" id="listFile" accept=".xlsx,.xls,.csv" style="display:none">
+<input type="file" id="listFile" accept=".xlsx,.xls,.csv" multiple style="display:none">
 <input type="file" id="flyerFile" accept="image/jpeg,image/png" style="display:none">
 
 <script>
@@ -515,35 +515,38 @@ async function saveDirector(id){
 }
 
 /* ===== roster / flyer upload ===== */
+// Raw, lowercased, NOT deduped -- callers merge multiple files' output together
+// before deduping, so a name split across two uploaded files still counts once.
 function extractEmailsFromWorkbook(wb){
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
-  const out=new Set(); const rx=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-  let seen=0;
-  // Case-insensitive: "John@X.com" and "john@x.com" are the same recipient --
-  // without lowercasing first, both would be kept and that person double-emailed.
-  const addIfValid=(v)=>{ const s=String(v||"").trim(); if(rx.test(s)){ seen++; out.add(s.toLowerCase()); } };
-  if(!rows.length) return {emails:[], duplicates:0};
+  const out=[]; const rx=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const addIfValid=(v)=>{ const s=String(v||"").trim(); if(rx.test(s)) out.push(s.toLowerCase()); };
+  if(!rows.length) return [];
   const header=rows[0].map(h=>String(h).toLowerCase().trim());
   let emailCol=header.indexOf("email");
   if(emailCol<0) emailCol=header.findIndex(h=>h.includes("email")&&!h.includes("additional")&&!h.includes("guardian"));
   if(emailCol<0){ rows.forEach(r=>r.forEach(c=>addIfValid(c))); }
   else{ for(let i=1;i<rows.length;i++) addIfValid(rows[i][emailCol]); }
-  return {emails:[...out], duplicates: seen-out.size};
+  return out;
 }
 function uploadList(eventId){
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
   const inp=document.getElementById("listFile");
   inp.value="";
   inp.onchange=async()=>{
-    const file=inp.files[0]; if(!file) return;
-    toast("Reading "+file.name+"…");
-    let emails, duplicates;
-    try{ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); ({emails,duplicates}=extractEmailsFromWorkbook(wb)); }
-    catch(err){ toast("Couldn't read that file ("+err.message+")."); return; }
-    if(!emails.length){ toast("No email addresses found in that file."); return; }
+    const files=[...inp.files]; if(!files.length) return;
+    toast(files.length>1?`Reading ${files.length} files…`:`Reading ${files[0].name}…`);
+    let raw=[];
+    try{
+      for(const file of files){ const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array"}); raw=raw.concat(extractEmailsFromWorkbook(wb)); }
+    }catch(err){ toast("Couldn't read that file ("+err.message+")."); return; }
+    const emails=[...new Set(raw)];
+    const duplicates=raw.length-emails.length;
+    if(!emails.length){ toast("No email addresses found in that file"+(files.length>1?"s":"")+"."); return; }
+    const fileNote = files.length>1 ? ` (combined from ${files.length} files)` : "";
     const dupNote = duplicates>0 ? `\n\n(Found and removed ${duplicates} duplicate${duplicates===1?'':'s'} -- each person is only in the list once.)` : "\n\n(No duplicates found.)";
-    if(!confirm(`Save ${emails.length} emails as the ${e.city||e.state} winter roster?${dupNote}`)) return;
+    if(!confirm(`Save ${emails.length} emails${fileNote} as the ${e.city||e.state} winter roster?${dupNote}`)) return;
     const pass=getSendPass(); if(!pass){ toast("Passcode needed to save the list."); return; }
     toast("Saving "+emails.length+" emails…");
     try{
@@ -782,7 +785,7 @@ function renderModal(){
     </div>
     <div class="row-upload">
       <div class="info">📋 ${ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet"}</div>
-      <button class="btn" onclick="uploadList('${e.id}')">⬆ Upload list</button>
+      <button class="btn" onclick="uploadList('${e.id}')" title="Select multiple files at once to combine them into one list">⬆ Upload list</button>
     </div>
     <div class="row-upload">
       <div class="info">${e.flyerUrl?`<img src="${esc(e.flyerUrl)}" class="flyer-thumb"> Flyer uploaded`:"No flyer uploaded yet"}</div>
