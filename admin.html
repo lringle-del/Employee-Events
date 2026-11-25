@@ -613,7 +613,10 @@ function emailSection(e){
       const note = status==="confirmed" ? "✓ Approved — will send "+fmtShort(r.date)+"." : status==="preview" ? "📨 Preview sent — approve it in your inbox" : "✓ Scheduled — approve it in your inbox to release it.";
       controls=`${saveApproveBtn}${sampleBtn}${flagBtn}<button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Revoke</button><span class="foot-note">${note}</span>`;
     }else if(status==="sent"){
-      controls=`${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button><span class="foot-note">✓ Sent</span>`;
+      // Resetting a real sent job would erase its "already sent" guard and risk a real
+      // duplicate send -- only ever offered for the zero-recipient Test Location.
+      const resetBtn = e.id==="w-test" ? `<button class="lnk" onclick="revokeFor('${e.id}','${r.key}')">Reset (test only)</button>` : "";
+      controls=`${sampleBtn}${flagBtn}<button class="btn ghost" onclick="copyMail('${e.id}','${r.key}')">Copy</button>${resetBtn}<span class="foot-note">✓ Sent</span>`;
     }else{
       controls=`<button class="lnk" onclick="restoreFor('${e.id}','${r.key}')">Restore</button><span class="foot-note">Ignored</span>`;
     }
