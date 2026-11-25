@@ -2,7 +2,7 @@ import { readJSON, writeJSON } from '../lib/blobstore.js';
 import { put, get } from '@vercel/blob';
 
 const KEY = 'winterEvents.json';
-const SITE_BASE = 'https://summer-appreciation-event.vercel.app';
+const SITE_BASE = 'https://events.abtaba.com';
 
 // Seed data — same 10 locations as summer, dates/venues TBD, plus Maryland as a
 // gift-only mailing (no party). Oklahoma's combined $10,000 budget is split into
