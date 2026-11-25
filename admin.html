@@ -488,6 +488,10 @@ async function saveTextField(id,field){
   const val=document.getElementById("e"+field+":"+id).value.trim();
   if(await patchEvent(id,{[field]:val})) toast("Saved ✓");
 }
+async function saveCity(id){
+  const val=document.getElementById("ecity:"+id).value.trim();
+  if(await patchEvent(id,{city:val})){ renderModal(); refreshAll(); toast("Saved ✓"); }
+}
 async function saveBcc(id){
   const raw=document.getElementById("ebcc:"+id).value;
   const list=raw.split(",").map(s=>s.trim()).filter(Boolean);
@@ -757,6 +761,9 @@ function renderModal(){
     </div>`;
 
   const detailsTab = `
+    <div class="grid2">
+      <div class="f" style="grid-column:1 / -1"><label>City / location name</label><input id="ecity:${e.id}" value="${esc(e.city||"")}" placeholder="e.g. ${esc(e.state)}" onchange="saveCity('${e.id}')"></div>
+    </div>
     ${dateFields}
     <div class="grid2">
       <div class="f"><label>Party Lead name</label><input id="plname:${e.id}" value="${esc(pl.name||"")}" placeholder="Name" onchange="savePL('${e.id}')"></div>
