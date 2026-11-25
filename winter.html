@@ -363,7 +363,8 @@ function extractEmailsFromWorkbook(wb){
   else{ for(let i=1;i<rows.length;i++) addIfValid(rows[i][emailCol]); }
   return out;
 }
-function uploadList(eventId){
+function uploadList(eventId, mode){
+  mode = mode==="add" ? "add" : "replace";
   const e=WINTER_EVENTS.find(x=>x.id===eventId);
   const inp=document.getElementById("listFile");
   inp.value="";
@@ -378,14 +379,22 @@ function uploadList(eventId){
     const duplicates=raw.length-emails.length;
     if(!emails.length){ toast("No email addresses found in that file"+(files.length>1?"s":"")+"."); return; }
     const fileNote = files.length>1 ? ` (combined from ${files.length} files)` : "";
-    const dupNote = duplicates>0 ? `\n\n(Found and removed ${duplicates} duplicate${duplicates===1?'':'s'} -- each person is only in the list once.)` : "\n\n(No duplicates found.)";
-    if(!confirm(`Save ${emails.length} emails${fileNote} as the ${e.city||e.state} winter roster?${dupNote}`)) return;
+    const dupNote = duplicates>0 ? `\n\n(Found and removed ${duplicates} duplicate${duplicates===1?'':'s'} within the file${files.length>1?'s':''}.)` : "";
+    const ac=audienceCount(e.label);
+    const ask = mode==="add"
+      ? `Add ${emails.length} emails${fileNote} to the ${ac||0} already saved for ${e.city||e.state}? (Anyone already on the list won't be duplicated.)`
+      : `Save ${emails.length} emails${fileNote} as the ${e.city||e.state} winter roster?${ac?` This REPLACES the ${ac} already saved — use "Add to list" instead if you just want to add more.`:""}`;
+    if(!confirm(ask+dupNote)) return;
     const pass=getSendPass(); if(!pass){ toast("Passcode needed to save the list."); return; }
-    toast("Saving "+emails.length+" emails…");
+    toast(mode==="add"?"Adding…":"Saving "+emails.length+" emails…");
     try{
-      const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails})});
+      const res=await fetch("/api/audience",{method:"POST",headers:{"content-type":"application/json","x-send-passcode":pass},body:JSON.stringify({label:"Winter "+e.label,emails,mode})});
       const j=await res.json().catch(()=>({}));
-      if(res.ok){ AUD_COUNTS["Winter "+e.label]=j.count; toast(`✓ Saved ${j.count} emails for ${e.city||e.state}.`); openModal(eventId); }
+      if(res.ok){
+        AUD_COUNTS["Winter "+e.label]=j.count;
+        toast(mode==="add" ? `✓ Added ${j.added} new email${j.added===1?'':'s'} — ${j.count} total for ${e.city||e.state}.` : `✓ Saved ${j.count} emails for ${e.city||e.state}.`);
+        openModal(eventId);
+      }
       else if(res.status===401){ localStorage.removeItem("send_pass"); toast("Incorrect passcode — try again."); }
       else{ toast("Save failed: "+(j.error||("HTTP "+res.status))); }
     }catch(err){ toast("Couldn't reach the server ("+err.message+")."); }
@@ -709,7 +718,7 @@ function openModal(id,focusKey){
         <div><label>State director (BCC)</label><input id="direml" type="email" value="${esc(dir)}" placeholder="name@abtaba.com" onchange="saveDirector()"></div>
         <div>
           <label>Employee list</label>
-          <div style="font-size:13px;font-weight:600;padding-top:8px">${(()=>{const ac=audienceCount(e.label);return ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet";})()} <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadList('${e.id}')" title="Select multiple files at once to combine them into one list">⬆ Upload</button></div>
+          <div style="font-size:13px;font-weight:600;padding-top:8px">${(()=>{const ac=audienceCount(e.label);return ac!=null?`<b>${ac}</b> emails uploaded`:"No list uploaded yet";})()} <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadList('${e.id}')" title="Select multiple files at once to combine them into one list -- this REPLACES the whole list">⬆ Replace</button> <button class="btn ghost" style="padding:5px 10px;font-size:11.5px" onclick="uploadList('${e.id}','add')" title="Adds new contacts to the list that's already saved, without removing anyone">➕ Add</button></div>
         </div>
       </div>
       <div class="plbox" style="grid-template-columns:1fr">

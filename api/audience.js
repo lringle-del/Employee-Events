@@ -30,9 +30,13 @@ export default async function handler(req, res) {
     const clean = [...new Set(emails.map((e) => String(e || '').trim().toLowerCase()).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
     const all = await readJSON(KEY, {});
     if (clean.length === 0 && body.allowEmpty !== true) return res.status(400).json({ error: 'No valid emails found in the list.' });
-    all[label] = clean;
+    // mode "add" merges into whatever's already saved (for adding a few more people
+    // later); anything else fully replaces the list, same as before.
+    const before = Array.isArray(all[label]) ? all[label] : [];
+    const merged = body.mode === 'add' ? [...new Set([...before, ...clean])] : clean;
+    all[label] = merged;
     await writeJSON(KEY, all);
-    return res.status(200).json({ ok: true, label, count: clean.length });
+    return res.status(200).json({ ok: true, label, count: merged.length, added: body.mode === 'add' ? merged.length - before.length : merged.length });
   }
 
   res.setHeader('Allow', 'GET, POST');
