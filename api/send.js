@@ -110,6 +110,9 @@ export default async function handler(req, res) {
   const html = (body && body.html) || undefined;
   const to = cleanList(body && body.to), bcc = cleanList(body && body.bcc);
   const replyTo = (body && body.replyTo) || undefined;
+  // Resend fetches the file itself from the given URL -- same {filename, path} shape
+  // lib/sendJob.js already uses for the real send, so a sample matches it exactly.
+  const attachments = (body && Array.isArray(body.attachments) && body.attachments.length) ? body.attachments : undefined;
   if (!subject || !text) return res.status(400).json({ error: 'Missing subject or body.' });
   if (!to.length && !bcc.length) return res.status(400).json({ error: 'No recipients.' });
 
@@ -119,12 +122,12 @@ export default async function handler(req, res) {
     if (bcc.length) {
       // Bulk: one message per chunk, recipients hidden in BCC, `to` = the from address.
       for (const group of chunk(bcc, 45)) {
-        const r = await resend.emails.send({ from, to: [from], bcc: group, subject, text, html, replyTo });
+        const r = await resend.emails.send({ from, to: [from], bcc: group, subject, text, html, replyTo, attachments });
         if (r.error) throw new Error(r.error.message || 'Resend error');
         sent += group.length;
       }
     } else {
-      const r = await resend.emails.send({ from, to, subject, text, html, replyTo });
+      const r = await resend.emails.send({ from, to, subject, text, html, replyTo, attachments });
       if (r.error) throw new Error(r.error.message || 'Resend error');
       sent += to.length;
     }
